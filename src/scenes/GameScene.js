@@ -33,7 +33,16 @@ export default class GameScene extends Phaser.Scene {
         this.groundStrip.setDepth(1);
 
         // ======================
-        // LANE SYSTEM
+        // CAMERA (IMPORTANT)
+        // ======================
+        this.cameras.main.startFollow(null);
+        this.cameras.main.roundPixels = true;
+        this.cameras.main.setLerp(0.08, 0.08);
+        this.cameras.main.setDeadzone(0, 200);
+        this.cameras.main.setFollowOffset(0, -120);
+
+        // ======================
+        // LANES
         // ======================
         this.nearHalfWidth = width * 0.30;
         this.farHalfWidth = width * 0.05;
@@ -55,12 +64,29 @@ export default class GameScene extends Phaser.Scene {
         const aspect = this.player.width / this.player.height;
 
         this.player.setDisplaySize(targetHeight * aspect, targetHeight);
+        this.player.setDepth(50);
 
         this.standHeight = this.player.displayHeight;
         this.baseY = this.groundY - (this.standHeight / 2);
-
         this.player.y = this.baseY;
-        this.player.setDepth(50);
+
+        // 👉 CAMERA follows player
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+
+        // ======================
+        // RUN ANIMATION
+        // ======================
+        this.anims.create({
+            key: "run",
+            frames: this.anims.generateFrameNumbers("playerRun", {
+                start: 0,
+                end: 5
+            }),
+            frameRate: 12,
+            repeat: -1
+        });
+
+        this.player.play("run");
 
         // ======================
         // STATE
@@ -86,9 +112,20 @@ export default class GameScene extends Phaser.Scene {
         this.coins = 0;
         this.lives = 3;
 
-        this.scoreText = this.add.text(20, 20, "Score: 0", { fontSize: "24px", color: "#fff" }).setDepth(100);
-        this.coinsText = this.add.text(20, 50, "Coins: 0", { fontSize: "20px", color: "#ffd54f" }).setDepth(100);
-        this.lifeText = this.add.text(20, 80, "Lives: 3", { fontSize: "20px", color: "#ff6666" }).setDepth(100);
+        this.scoreText = this.add.text(20, 20, "Score: 0", {
+            fontSize: "24px",
+            color: "#fff"
+        }).setDepth(100);
+
+        this.coinsText = this.add.text(20, 50, "Coins: 0", {
+            fontSize: "20px",
+            color: "#ffd54f"
+        }).setDepth(100);
+
+        this.lifeText = this.add.text(20, 80, "Lives: 3", {
+            fontSize: "20px",
+            color: "#ff6666"
+        }).setDepth(100);
 
         // ======================
         // SPAWN
@@ -98,7 +135,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ======================
-    // LANE POSITION
+    // LANE SYSTEM
     // ======================
     laneXAtDepth(lane, t) {
         const cx = this.scale.width / 2;
@@ -131,7 +168,7 @@ export default class GameScene extends Phaser.Scene {
 
         if (ent.type === "bar") {
             ent.sprite.setDisplaySize(ent.w * scale, ent.h * scale);
-            ent.sprite.setAngle(90); // 🔥 واقف بالطول
+            ent.sprite.setAngle(90); // واقف بالطول
         }
 
         if (ent.type === "coin") {
@@ -144,7 +181,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // ======================
-    // INPUT ACTIONS
+    // CONTROLS
     // ======================
     changeLane(dir) {
 
@@ -166,8 +203,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.isJumping = true;
 
-        this.player.setTexture("playerJump");
-
         this.tweens.add({
             targets: this.player,
             y: this.baseY - 120,
@@ -177,7 +212,6 @@ export default class GameScene extends Phaser.Scene {
             onComplete: () => {
                 this.isJumping = false;
                 this.player.y = this.baseY;
-                this.player.setTexture("playerRun");
             }
         });
     }
@@ -186,8 +220,6 @@ export default class GameScene extends Phaser.Scene {
         if (this.isJumping || this.isDucking) return;
 
         this.isDucking = true;
-
-        this.player.setTexture("playerIdle");
 
         this.player.setScale(1, 0.6);
         this.player.y = this.baseY + 20;
@@ -198,11 +230,10 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.setScale(1, 1);
         this.player.y = this.baseY;
-        this.player.setTexture("playerRun");
     }
 
     // ======================
-    // SPAWN SYSTEM
+    // SPAWN
     // ======================
     spawnEntity(type, lane, zOffset = 0) {
 
@@ -249,9 +280,7 @@ export default class GameScene extends Phaser.Scene {
 
         const dt = delta / 1000;
 
-        // ======================
-        // INPUT FIX
-        // ======================
+        // INPUT
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
             this.changeLane(-1);
         }
@@ -266,19 +295,15 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.cursors.down.isDown) {
             this.beginDuck();
-        } else if (this.isDucking) {
+        } else {
             this.endDuck();
         }
 
-        // ======================
         // SCORE
-        // ======================
         this.score += dt * 10;
         this.scoreText.setText("Score: " + Math.floor(this.score));
 
-        // ======================
         // MOVE ENTITIES
-        // ======================
         for (let i = this.entities.length - 1; i >= 0; i--) {
 
             const e = this.entities[i];
@@ -293,9 +318,7 @@ export default class GameScene extends Phaser.Scene {
             }
         }
 
-        // ======================
         // SPAWN
-        // ======================
         this.spawnTimer += delta;
 
         if (this.spawnTimer > this.nextSpawnIn) {
