@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Game</title>
-    <style>
-        body {
-            margin: 0;
-            background: black;
-        }
-        #game {
-            width: 100%;
-            height: 100vh;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>TEST GAME</title>
+  <style>
+    body { margin: 0; background: black; }
+    #game { width: 100vw; height: 100vh; }
+  </style>
 </head>
 <body>
 
 <div id="game"></div>
 
-<script type="module" src="/src/main.js"></script>
+<script type="module">
+  import Phaser from "https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.esm.js";
+
+  const config = {
+    type: Phaser.AUTO,
+    parent: "game",
+    width: 720,
+    height: 1280,
+    backgroundColor: "#ff0000",
+    scene: {
+      create() {
+        this.add.text(200, 300, "PHASER IS RUNNING", {
+          fontSize: "32px",
+          color: "#fff"
+        });
+      }
+    }
+  };
+
+  new Phaser.Game(config);
+</script>
 
 </body>
 </html>
