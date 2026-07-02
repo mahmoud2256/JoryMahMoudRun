@@ -22,9 +22,9 @@ const config = {
 
         autoCenter: Phaser.Scale.CENTER_BOTH,
 
-    width: 1080,
+        width: 1080,
 
-    height: 1920,
+        height: 1920
 
     },
 
@@ -36,7 +36,7 @@ const config = {
 
             gravity: {
 
-                y: 1200
+                y: 1500
 
             },
 
