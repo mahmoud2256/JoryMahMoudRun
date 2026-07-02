@@ -303,8 +303,26 @@ export default class GameScene extends Phaser.Scene {
         this.elapsedTime += dt;
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
 
-        this.background.tilePositionY -= this.zSpeed * 4 * dt;
-        this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
+        const dt = delta / 1000;
+
+        this.elapsedTime += dt;
+        this.zSpeed = Math.min(
+        this.zMaxSpeed,
+        this.zBaseSpeed + this.elapsedTime * this.zRampRate
+    );
+
+// الخلفية ثابتة
+// this.background.tilePositionY -= this.zSpeed * 4 * dt;
+
+// الأرض فقط تتحرك
+this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
+
+if (!this.isJumping && !this.isDucking) {
+    this.player.setTexture("playerRun");
+}
+
+this.score += dt * 12;
+this.scoreText.setText("Score : " + Math.floor(this.score));
 
         if (!this.isJumping && !this.isDucking) this.player.setTexture("playerRun");
 
