@@ -31,5 +31,4 @@ const config = {
     ]
 };
 
-// تشغيل اللعبة
 new Phaser.Game(config);
