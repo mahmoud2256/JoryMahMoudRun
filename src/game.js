@@ -10,17 +10,21 @@ const config = {
 
     parent: "game",
 
-    width: 720,
+    width: 1080,
 
-    height: 1280,
+    height: 1920,
 
     backgroundColor: "#000000",
 
     scale: {
 
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.ENVELOP,
 
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+
+    width: 1080,
+
+    height: 1920,
 
     },
 
