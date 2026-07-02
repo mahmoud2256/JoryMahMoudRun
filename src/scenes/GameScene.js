@@ -23,7 +23,15 @@ export default class GameScene extends Phaser.Scene {
 
         this.groundY = height - 110;
 
-        this.groundStrip = this.add.rectangle(width/2,this.groundY+55,width,110,0x6b8e23).setDepth(1);
+        this.groundStrip = this.add.tileSprite(
+            width / 2,
+            this.groundY + 55,
+            width,
+            110,
+            "ground"
+        );
+
+        this.groundStrip.setDepth(1);
 
         this.horizonY = height * 0.22;
         this.nearHalfWidth = width * 0.30;
@@ -296,7 +304,7 @@ export default class GameScene extends Phaser.Scene {
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
 
         this.background.tilePositionY -= this.zSpeed * 4 * dt;
-        
+        this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
 
         if (!this.isJumping && !this.isDucking) this.player.setTexture("playerRun");
 
@@ -473,7 +481,7 @@ export default class GameScene extends Phaser.Scene {
         retryBtn.setInteractive();
 
         retryBtn.on("pointerdown", () => {
-            this.physics.resume();
+            this.scene.resume();
             this.scene.restart();
         });
 
@@ -492,7 +500,7 @@ export default class GameScene extends Phaser.Scene {
         menuBtn.setInteractive();
 
         menuBtn.on("pointerdown", () => {
-            this.physics.resume();
+            this.scene.resume();
             this.scene.start("MenuScene");
         });
 
