@@ -419,7 +419,7 @@ export default class GameScene extends Phaser.Scene {
         const height = this.scale.height;
 
         this.scene.pause();
-
+        this.input.enabled = true;
         const overlay = this.add.rectangle(
             width / 2, height / 2,
             width, height,
@@ -468,7 +468,7 @@ export default class GameScene extends Phaser.Scene {
         const retryBtn = this.add.text(
             width / 2,
             height * 0.68,
-            "▶ العب تاني",
+            "▶ PLAY AGAIN",
             {
                 fontSize: "30px",
                 fontStyle: "bold",
@@ -488,7 +488,7 @@ export default class GameScene extends Phaser.Scene {
         const menuBtn = this.add.text(
             width / 2,
             height * 0.80,
-            "القايمة الرئيسية",
+            "MAIN MENU",
             {
                 fontSize: "22px",
                 color: "#cccccc",
