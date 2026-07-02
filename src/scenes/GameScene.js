@@ -292,56 +292,74 @@ export default class GameScene extends Phaser.Scene {
 
     update(time, delta) {
 
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
-        if (this.cursors.down.isDown && !this.isDucking && !this.isJumping) this.beginDuck();
-        if (!this.cursors.down.isDown && this.isDucking) this.endDuck();
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
+    if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
-        const dt = delta / 1000;
+    if (this.cursors.down.isDown && !this.isDucking && !this.isJumping) {
+        this.beginDuck();
+    }
 
-        this.elapsedTime += dt;
-        this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
+    if (!this.cursors.down.isDown && this.isDucking) {
+        this.endDuck();
+    }
 
-        const dt = delta / 1000;
+    const dt = delta / 1000;
 
-        this.elapsedTime += dt;
-        this.zSpeed = Math.min(
+    this.elapsedTime += dt;
+
+    this.zSpeed = Math.min(
         this.zMaxSpeed,
         this.zBaseSpeed + this.elapsedTime * this.zRampRate
     );
 
-// الخلفية ثابتة
-// this.background.tilePositionY -= this.zSpeed * 4 * dt;
+    // الخلفية ثابتة
 
-// الأرض فقط تتحرك
-this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
+    // الأرض تتحرك فقط
+    this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
 
-if (!this.isJumping && !this.isDucking) {
-    this.player.setTexture("playerRun");
-}
+    if (!this.isJumping && !this.isDucking) {
+        this.player.setTexture("playerRun");
+    }
 
-this.score += dt * 12;
-this.scoreText.setText("Score : " + Math.floor(this.score));
+    this.score += dt * 12;
+    this.scoreText.setText("Score : " + Math.floor(this.score));
 
-        if (!this.isJumping && !this.isDucking) this.player.setTexture("playerRun");
+    for (let i = this.entities.length - 1; i >= 0; i--) {
 
-        this.score += dt * 12;
-        this.scoreText.setText("Score : " + Math.floor(this.score));
+        const ent = this.entities[i];
 
-        for (let i = this.entities.length - 1; i >= 0; i--) {
-            const ent = this.entities[i];
-            ent.z -= this.zSpeed * dt;
-            this.updateEntityVisual(ent);
-            if (!ent.resolved && ent.lane === this.currentLane && ent.z <= this.HIT_Z) {
-                ent.resolved = true;
-                this.resolveEntity(ent, i);
-            }
-            if (ent.z <= this.CLEANUP_Z) {
-                if (ent.sprite && ent.sprite.active) ent.sprite.destroy();
-                this.entities.splice(i, 1);
-            }
+        ent.z -= this.zSpeed * dt;
+
+        this.updateEntityVisual(ent);
+
+        if (
+            !ent.resolved &&
+            ent.lane === this.currentLane &&
+            ent.z <= this.HIT_Z
+        ) {
+            ent.resolved = true;
+            this.resolveEntity(ent, i);
         }
+
+        if (ent.z <= this.CLEANUP_Z) {
+            if (ent.sprite && ent.sprite.active) ent.sprite.destroy();
+            this.entities.splice(i, 1);
+        }
+    }
+
+    this.spawnTimer += delta;
+
+    if (this.spawnTimer >= this.nextSpawnIn) {
+        this.spawnTimer = 0;
+
+        this.nextSpawnIn =
+            Phaser.Math.Between(1100, 1700) *
+            (this.zBaseSpeed / this.zSpeed);
+
+        this.spawnWave();
+    }
+}
 
         this.spawnTimer += delta;
         if (this.spawnTimer >= this.nextSpawnIn) {
