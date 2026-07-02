@@ -35,9 +35,8 @@ export default class GameScene extends Phaser.Scene {
         // ======================
         // CAMERA (IMPORTANT)
         // ======================
-        this.cameras.main.startFollow(null);
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
         this.cameras.main.roundPixels = true;
-        this.cameras.main.setLerp(0.08, 0.08);
         this.cameras.main.setDeadzone(0, 200);
         this.cameras.main.setFollowOffset(0, -120);
 
