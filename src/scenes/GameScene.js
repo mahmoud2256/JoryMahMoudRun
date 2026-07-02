@@ -19,7 +19,7 @@ export default class GameScene extends Phaser.Scene {
         // ================= GROUND =================
         this.groundY = h - 110;
 
-        this.add.tileSprite(
+        this.groundStrip = this.add.tileSprite(
             w / 2,
             this.groundY + 55,
             w,
@@ -27,7 +27,7 @@ export default class GameScene extends Phaser.Scene {
             "ground"
         ).setDepth(1);
 
-        // ================= CAMERA (FIXED - NO FOLLOW) =================
+        // ================= CAMERA FIX =================
         this.cameras.main.setScroll(0, 0);
         this.cameras.main.roundPixels = true;
 
@@ -57,21 +57,52 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.y = this.baseY;
 
+        // ================= ANIMATIONS =================
+        this.anims.create({
+            key: "run",
+            frames: this.anims.generateFrameNumbers("playerRun", {
+                start: 0,
+                end: 5
+            }),
+            frameRate: 12,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: "jump",
+            frames: this.anims.generateFrameNumbers("playerJump", {
+                start: 0,
+                end: 1
+            }),
+            frameRate: 10,
+            repeat: 0
+        });
+
+        this.anims.create({
+            key: "slide",
+            frames: this.anims.generateFrameNumbers("playerSlide", {
+                start: 0,
+                end: 3
+            }),
+            frameRate: 14,
+            repeat: 0
+        });
+
+        this.player.play("run");
+
         // ================= STATE =================
         this.isJumping = false;
         this.isDucking = false;
 
         this.entities = [];
 
-        this.zSpeed = 16;
-        this.elapsedTime = 0;
+        this.zSpeed = 20; // 🔥 faster for forward feel
+        this.score = 0;
 
         // ================= INPUT =================
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // ================= SCORE =================
-        this.score = 0;
-
+        // ================= UI =================
         this.scoreText = this.add.text(20, 20, "Score: 0", {
             fontSize: "24px",
             color: "#fff"
@@ -106,15 +137,13 @@ export default class GameScene extends Phaser.Scene {
         e.sprite.x = this.laneX(e.lane, t);
         e.sprite.y = this.yFromDepth(t);
 
-        const s = 1 + (0.12 - 1) * Math.pow(t, 1.6);
-
         if (e.type === "bar") {
-            e.sprite.setDisplaySize(e.w * s, e.h * s);
-            e.sprite.setAngle(90);
+            e.sprite.setDisplaySize(e.w, e.h);
+            e.sprite.setAngle(0);
         }
 
         if (e.type === "coin") {
-            e.sprite.setDisplaySize(e.size * s, e.size * s);
+            e.sprite.setDisplaySize(e.size, e.size);
         }
     }
 
@@ -127,11 +156,9 @@ export default class GameScene extends Phaser.Scene {
 
         this.currentLane = next;
 
-        const x = this.laneX(this.currentLane, 0);
-
         this.tweens.add({
             targets: this.player,
-            x: x,
+            x: this.laneX(this.currentLane, 0),
             duration: 150,
             ease: "Sine.easeOut"
         });
@@ -143,30 +170,42 @@ export default class GameScene extends Phaser.Scene {
 
         this.isJumping = true;
 
+        this.player.play("jump");
+
         this.tweens.add({
             targets: this.player,
-            y: this.baseY - 120,
-            duration: 300,
+            y: this.baseY - 140,
+            duration: 280,
             yoyo: true,
             ease: "Sine.easeOut",
             onComplete: () => {
                 this.isJumping = false;
                 this.player.y = this.baseY;
+                this.player.play("run");
             }
         });
     }
 
     beginDuck() {
+
         if (this.isJumping) return;
+
         this.isDucking = true;
+
+        this.player.play("slide");
+
         this.player.setScale(1, 0.6);
-        this.player.y = this.baseY + 20;
+        this.player.y = this.baseY + 25;
     }
 
     endDuck() {
+
         this.isDucking = false;
+
         this.player.setScale(1, 1);
         this.player.y = this.baseY;
+
+        this.player.play("run");
     }
 
     // ================= SPAWN =================
@@ -224,6 +263,10 @@ export default class GameScene extends Phaser.Scene {
         // SCORE
         this.score += dt * 10;
         this.scoreText.setText("Score: " + Math.floor(this.score));
+
+        // FORWARD FEEL (important 🔥)
+        this.groundStrip.tilePositionX += this.zSpeed * dt * 2;
+        this.zSpeed = Math.min(60, this.zSpeed + dt * 0.8);
 
         // MOVE ENTITIES
         for (let i = this.entities.length - 1; i >= 0; i--) {
