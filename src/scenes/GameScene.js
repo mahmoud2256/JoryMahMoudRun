@@ -8,35 +8,34 @@ export default class GameScene extends Phaser.Scene {
 
     create() {
 
-        const width = this.scale.width;
-        const height = this.scale.height;
+        const w = this.scale.width;
+        const h = this.scale.height;
 
         // ================= BACKGROUND =================
-        this.add.image(width / 2, height / 2, "background")
-            .setDisplaySize(width, height)
+        this.add.image(w / 2, h / 2, "background")
+            .setDisplaySize(w, h)
             .setDepth(0);
 
         // ================= GROUND =================
-        this.groundY = height - 110;
+        this.groundY = h - 110;
 
         this.add.tileSprite(
-            width / 2,
+            w / 2,
             this.groundY + 55,
-            width,
+            w,
             110,
             "ground"
         ).setDepth(1);
 
-        // ================= CAMERA FIX =================
+        // ================= CAMERA (FIXED - NO FOLLOW) =================
+        this.cameras.main.setScroll(0, 0);
         this.cameras.main.roundPixels = true;
-        this.cameras.main.setLerp(0.08, 0.08);
-        this.cameras.main.setDeadzone(0, 200);
 
         // ================= LANES =================
-        this.nearHalfWidth = width * 0.30;
-        this.farHalfWidth = width * 0.05;
+        this.nearHalfWidth = w * 0.30;
+        this.farHalfWidth = w * 0.05;
 
-        this.horizonY = height * 0.22;
+        this.horizonY = h * 0.22;
 
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
@@ -45,21 +44,18 @@ export default class GameScene extends Phaser.Scene {
         this.currentLane = 1;
 
         // ================= PLAYER =================
-        this.player = this.add.sprite(0, 0, "playerRun");
+        this.player = this.add.sprite(w / 2, 0, "playerRun");
 
-        const h = height * 0.16;
+        const size = h * 0.16;
         const aspect = this.player.width / this.player.height;
 
-        this.player.setDisplaySize(h * aspect, h);
+        this.player.setDisplaySize(size * aspect, size);
         this.player.setDepth(50);
 
         this.standHeight = this.player.displayHeight;
         this.baseY = this.groundY - (this.standHeight / 2);
 
         this.player.y = this.baseY;
-
-        // 👉 CAMERA FOLLOW (FIXED)
-        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
         // ================= STATE =================
         this.isJumping = false;
@@ -73,7 +69,7 @@ export default class GameScene extends Phaser.Scene {
         // ================= INPUT =================
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // ================= HUD =================
+        // ================= SCORE =================
         this.score = 0;
 
         this.scoreText = this.add.text(20, 20, "Score: 0", {
@@ -86,7 +82,7 @@ export default class GameScene extends Phaser.Scene {
         this.nextSpawnIn = 1500;
     }
 
-    // ================= LANE SYSTEM =================
+    // ================= LANES =================
     laneX(lane, t) {
         const cx = this.scale.width / 2;
         const w = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * t;
@@ -131,9 +127,11 @@ export default class GameScene extends Phaser.Scene {
 
         this.currentLane = next;
 
+        const x = this.laneX(this.currentLane, 0);
+
         this.tweens.add({
             targets: this.player,
-            x: this.laneX(this.currentLane, 0),
+            x: x,
             duration: 150,
             ease: "Sine.easeOut"
         });

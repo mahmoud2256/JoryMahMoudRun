@@ -9,7 +9,6 @@ const config = {
     parent: "game",
     width: 720,
     height: 1280,
-    backgroundColor: "#000000",
 
     scale: {
         mode: Phaser.Scale.FIT,
