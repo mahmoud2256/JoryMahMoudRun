@@ -468,7 +468,7 @@ export default class GameScene extends Phaser.Scene {
         const retryBtn = this.add.text(
             width / 2,
             height * 0.68,
-            "▶ مفيش امل",
+            "▶  ☺ مفيش امل",
             {
                 fontSize: "30px",
                 fontStyle: "bold",
