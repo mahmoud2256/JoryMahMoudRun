@@ -468,7 +468,7 @@ export default class GameScene extends Phaser.Scene {
         const retryBtn = this.add.text(
             width / 2,
             height * 0.68,
-            "▶ PLAY AGAIN",
+            "▶ مفيش امل",
             {
                 fontSize: "30px",
                 fontStyle: "bold",
@@ -488,7 +488,7 @@ export default class GameScene extends Phaser.Scene {
         const menuBtn = this.add.text(
             width / 2,
             height * 0.80,
-            "MAIN MENU",
+            "تفتكر هاتفرق",
             {
                 fontSize: "22px",
                 color: "#cccccc",
