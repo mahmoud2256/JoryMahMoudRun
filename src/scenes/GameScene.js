@@ -11,17 +11,15 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.background = this.add.tileSprite(
+        this.background = this.add.image(
             width / 2,
             height / 2,
-            width,
-            height,
             "background"
         );
 
         this.background.setDisplaySize(width, height)
         his.background.setDepth(0);
-        
+
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
@@ -317,7 +315,6 @@ export default class GameScene extends Phaser.Scene {
     // الخلفية ثابتة
 
     // الأرض تتحرك فقط
-    this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
 
     if (!this.isJumping && !this.isDucking) {
         this.player.setTexture("playerRun");
