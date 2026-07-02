@@ -1,29 +1,25 @@
 import Phaser from "phaser";
 
-import BootScene from "./scenes/BootScene.js";
-import MenuScene from "./scenes/MenuScene.js";
-import GameScene from "./scenes/GameScene.js";
+import BootScene from "./scenes/BootScene";
+import MenuScene from "./scenes/MenuScene";
+import GameScene from "./scenes/GameScene";
 
 const config = {
     type: Phaser.AUTO,
-
     parent: "game",
-
-    backgroundColor: "#151933",
+    width: 720,
+    height: 1280,
+    backgroundColor: "#000000",
 
     scale: {
         mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        width: 480,
-        height: 854
+        autoCenter: Phaser.Scale.CENTER_BOTH
     },
 
     physics: {
         default: "arcade",
         arcade: {
-            gravity: {
-                y: 0
-            },
+            gravity: { y: 0 },
             debug: false
         }
     },
@@ -35,4 +31,5 @@ const config = {
     ]
 };
 
+// تشغيل اللعبة
 new Phaser.Game(config);
