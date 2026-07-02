@@ -418,7 +418,7 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.scene.pause();
+        this.physics.pause();
         this.input.enabled = true;
         const overlay = this.add.rectangle(
             width / 2, height / 2,
