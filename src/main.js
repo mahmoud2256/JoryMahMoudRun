@@ -1,10 +1,9 @@
 import Phaser from "phaser";
-
 import BootScene from "./scenes/BootScene";
 import MenuScene from "./scenes/MenuScene";
 import GameScene from "./scenes/GameScene";
 
-const config = {
+new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
     width: 720,
@@ -17,13 +16,8 @@ const config = {
 
     physics: {
         default: "arcade",
-        arcade: {
-            gravity: { y: 0 },
-            debug: false
-        }
+        arcade: { gravity: { y: 0 } }
     },
 
     scene: [BootScene, MenuScene, GameScene]
-};
-
-new Phaser.Game(config);
+});
