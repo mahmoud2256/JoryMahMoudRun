@@ -34,7 +34,7 @@ export default class GameScene extends Phaser.Scene {
         // nearHalfWidth = نص عرض المسارات قرب اللاعب
         // farHalfWidth = نص عرض المسارات عند الأفق
         // =========================
-        this.horizonY = height * 0.48;
+        this.horizonY = height * 0.52;
         this.nearHalfWidth = width * 0.36;
         this.farHalfWidth = width * 0.05;
 
