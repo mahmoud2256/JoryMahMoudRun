@@ -19,8 +19,11 @@ export default class GameScene extends Phaser.Scene {
 
         );
 
-
-        this.background.setDisplaySize(width, height);
+        this.background.setDisplaySize(
+            this.scale.width,
+            this.scale.height
+        );
+            
         this.background.setScrollFactor(0);
         this.background.setDepth(0);
 
@@ -128,6 +131,8 @@ export default class GameScene extends Phaser.Scene {
 
         const t = this.depthT(ent.z);
         const x = this.laneXAtDepth(ent.lane, t);
+        // IMPORTANT FIX: تثبيت كل شيء على الأرض
+        let y = this.baseY;
         const y = this.screenY(t);
         const s = this.scaleByDepth(t);
 
@@ -191,8 +196,9 @@ export default class GameScene extends Phaser.Scene {
         let sprite;
 
         if (type === "coin") sprite = this.add.image(0, 0, "coin");
-        if (type === "bar") sprite = this.add.image(0, 0, "barTexture");
-        if (type === "ground") sprite = this.add.image(0, 0, "slime");
+        if (type === "bar") {sprite = this.add.rectangle(0, 0, 120, 40, 0xff4444);}
+        if (type === "ground") {sprite = this.add.rectangle(0, 0, 70, 70, 0x00ff00);}
+        if (type === "coin") {sprite = this.add.circle(0, 0, 20, 0xffff00);}
 
         const ent = {
             type,
