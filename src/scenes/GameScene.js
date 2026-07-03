@@ -1,119 +1,293 @@
 import Phaser from "phaser";
 
 export default class GameScene extends Phaser.Scene {
+
     constructor() {
         super("GameScene");
     }
 
     create() {
 
-        // ===== المقاسات =====
-        this.width = this.scale.width;
-        this.height = this.scale.height;
+        const width = this.scale.width;
+        const height = this.scale.height;
 
-        // ===== كاميرا Runner =====
-        this.cameras.main.setBounds(0, 0, 999999, this.height);
-        this.physics.world.setBounds(0, 0, 999999, this.height);
-
-        // ===== خلفية ثابتة (مش بتتحرك) =====
-        this.background = this.add.image(
-            this.width / 2,
-            this.height / 2,
+        // ===== الخلفية =====
+        this.background = this.add.tileSprite(
+            width / 2,
+            height / 2,
+            width,
+            height,
             "background"
         );
+        this.background.setDepth(0);
 
-        this.background.setDisplaySize(this.width, this.height);
-        this.background.setScrollFactor(0);
+        // ===== الأرض =====
+        this.groundY = height - 110;
 
-        // ===== أرض =====
-        this.groundY = this.height - 120;
+        this.groundStrip = this.add.tileSprite(
+            width / 2,
+            this.groundY + 55,
+            width,
+            110,
+            "ground"
+        );
+        this.groundStrip.setDepth(1);
+
+        // ===== منظور lanes =====
+        this.horizonY = height * 0.35;
+        this.nearHalfWidth = width * 0.42;
+        this.farHalfWidth = width * 0.02;
+
+        this.SPAWN_Z = 60;
+        this.HIT_Z = 4;
+        this.CLEANUP_Z = -6;
 
         // ===== اللاعب =====
-        this.player = this.physics.add.sprite(150, this.groundY, "player");
-        this.player.setCollideWorldBounds(true);
-        this.player.setGravityY(1000);
+        this.currentLane = 1;
 
-        // الكاميرا تتبع اللاعب
-        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-        this.cameras.main.setZoom(1);
-
-        // ===== الحواجز =====
-        this.obstacles = this.physics.add.group();
-
-        // spawn
-        this.time.addEvent({
-            delay: 1400,
-            loop: true,
-            callback: this.spawnObstacle,
-            callbackScope: this
-        });
-
-        // ===== تصادم =====
-        this.physics.add.collider(
-            this.player,
-            this.obstacles,
-            this.hitObstacle,
-            null,
-            this
+        this.player = this.add.sprite(
+            this.laneXAtDepth(this.currentLane, 0),
+            this.groundY,
+            "playerRun"
         );
 
-        // ===== تحكم =====
-        this.input.on("pointerdown", () => {
-            this.jump();
-        });
+        const targetHeight = height * 0.16;
+        const aspect = this.player.width / this.player.height;
 
+        this.player.setDisplaySize(targetHeight * aspect, targetHeight);
+        this.player.setDepth(50);
+
+        this.baseY = this.groundY - (this.player.displayHeight / 2);
+
+        this.player.y = this.baseY;
+
+        // ===== حالات =====
+        this.isJumping = false;
+        this.isDucking = false;
+        this.gameOver = false;
+
+        // ===== entities =====
+        this.entities = [];
+
+        // ===== سرعة =====
+        this.zBaseSpeed = 16;
+        this.zMaxSpeed = 55;
+        this.zSpeed = this.zBaseSpeed;
+        this.elapsedTime = 0;
+
+        // ===== UI =====
+        this.score = 0;
+
+        this.scoreText = this.add.text(20, 20, "Score: 0", {
+            fontSize: "26px",
+            color: "#fff",
+            stroke: "#000",
+            strokeThickness: 4
+        }).setDepth(100);
+
+        // ===== Controls =====
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.gameSpeed = 350;
-        this.distance = 0;
+        this.input.on("pointerdown", () => {
+            if (!this.gameOver) this.tryJump();
+        });
+
+        this.spawnTimer = 0;
+        this.nextSpawnIn = 1400;
     }
 
-    update() {
+    // ===== lane system =====
+    laneXAtDepth(laneIndex, depthT) {
+        const cx = this.scale.width / 2;
+        const halfWidth =
+            this.nearHalfWidth +
+            (this.farHalfWidth - this.nearHalfWidth) * depthT;
 
-        // قفز
-        if (this.cursors.space.isDown || this.cursors.up.isDown) {
-            this.jump();
+        return cx + (laneIndex - 1) * halfWidth;
+    }
+
+    depthT(z) {
+        return Phaser.Math.Clamp(z / this.SPAWN_Z, 0, 1);
+    }
+
+    screenY(depthT) {
+        const eased = Math.pow(depthT, 1.6);
+        return this.baseY + (this.horizonY - this.baseY) * eased;
+    }
+
+    scaleByDepth(depthT) {
+        const eased = Math.pow(depthT, 1.6);
+        return 1 + (0.12 - 1) * eased;
+    }
+
+    // ===== entity update =====
+    updateEntity(ent) {
+
+        const t = this.depthT(ent.z);
+        const x = this.laneXAtDepth(ent.lane, t);
+        const y = this.screenY(t);
+        const s = this.scaleByDepth(t);
+
+        ent.sprite.x = x;
+        ent.sprite.y = y;
+
+        ent.sprite.setDepth(10 + (1 - t) * 20);
+
+        if (ent.type === "coin") {
+            const size = ent.baseSize * s;
+            ent.sprite.setDisplaySize(size, size);
         }
 
-        // مسافة (اختياري للـ score بعدين)
-        this.distance += 1;
+        if (ent.type === "bar") {
+            ent.sprite.setDisplaySize(ent.w * s, ent.h * s);
+        }
 
-        // تنظيف الحواجز
-        this.obstacles.getChildren().forEach((obstacle) => {
-            if (obstacle.x < this.player.x - 800) {
-                obstacle.destroy();
+        if (ent.type === "ground") {
+            const size = ent.baseSize * s;
+            ent.sprite.setDisplaySize(size, size);
+        }
+    }
+
+    // ===== input =====
+    changeLane(dir) {
+        const newLane = this.currentLane + dir;
+        if (newLane < 0 || newLane > 2) return;
+        if (this.isDucking) return;
+
+        this.currentLane = newLane;
+
+        this.tweens.add({
+            targets: this.player,
+            x: this.laneXAtDepth(this.currentLane, 0),
+            duration: 150,
+            ease: "Sine.easeOut"
+        });
+    }
+
+    tryJump() {
+        if (this.isJumping || this.isDucking) return;
+
+        this.isJumping = true;
+
+        this.tweens.add({
+            targets: this.player,
+            y: this.baseY - 120,
+            duration: 250,
+            ease: "Sine.easeOut",
+            yoyo: true,
+            onComplete: () => {
+                this.isJumping = false;
+                this.player.y = this.baseY;
             }
         });
     }
 
-    jump() {
-        if (this.player.body.blocked.down) {
-            this.player.setVelocityY(-520);
+    // ===== spawn =====
+    spawnEntity(type, lane, zOffset = 0) {
+
+        let sprite;
+
+        if (type === "coin") sprite = this.add.image(0, 0, "coin");
+        if (type === "bar") sprite = this.add.image(0, 0, "barTexture");
+        if (type === "ground") sprite = this.add.image(0, 0, "slime");
+
+        const ent = {
+            type,
+            lane,
+            z: this.SPAWN_Z + zOffset,
+            sprite,
+            baseSize: 60,
+            w: 110,
+            h: 90
+        };
+
+        this.entities.push(ent);
+        this.updateEntity(ent);
+    }
+
+    spawnWave() {
+        const lane = Phaser.Math.Between(0, 2);
+        const r = Math.random();
+
+        if (r < 0.4) {
+            this.spawnEntity("bar", lane);
+        } else if (r < 0.7) {
+            this.spawnEntity("ground", lane);
+        } else {
+            for (let i = 0; i < 3; i++) {
+                this.spawnEntity("coin", lane, i * 6);
+            }
         }
     }
 
-    spawnObstacle() {
+    // ===== update loop =====
+    update(time, delta) {
 
-        const spawnX = this.player.x + 900;
+        if (this.gameOver) return;
 
-        const obstacle = this.obstacles.create(
-            spawnX,
-            this.groundY,
-            "obstacle"
+        const dt = delta / 1000;
+
+        this.elapsedTime += dt;
+        this.zSpeed = Math.min(
+            this.zMaxSpeed,
+            this.zBaseSpeed + this.elapsedTime * 0.4
         );
 
-        obstacle.setVelocityX(-this.gameSpeed);
-        obstacle.setImmovable(true);
-        obstacle.setGravityY(0);
-    }
+        // ===== parallax =====
+        this.background.tilePositionY -= this.zSpeed * dt * 1.2;
+        this.groundStrip.tilePositionY -= this.zSpeed * dt * 6;
 
-    hitObstacle() {
+        // ===== controls =====
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
 
-        this.physics.pause();
-        this.player.setTint(0xff0000);
+        // ===== score =====
+        this.score += dt * 10;
+        this.scoreText.setText("Score: " + Math.floor(this.score));
 
-        this.time.delayedCall(800, () => {
-            this.scene.restart();
-        });
+        // ===== player fix position =====
+        this.player.x = this.laneXAtDepth(this.currentLane, 0);
+
+        // ===== entities =====
+        for (let i = this.entities.length - 1; i >= 0; i--) {
+
+            const ent = this.entities[i];
+
+            ent.z -= this.zSpeed * dt;
+
+            this.updateEntity(ent);
+
+            // hit check
+            if (!ent.hit && ent.lane === this.currentLane && ent.z <= this.HIT_Z) {
+                ent.hit = true;
+
+                if (ent.type === "coin") {
+                    ent.sprite.destroy();
+                    this.entities.splice(i, 1);
+                    this.score += 20;
+                    continue;
+                }
+
+                // hit obstacle
+                this.scene.restart();
+                return;
+            }
+
+            // cleanup
+            if (ent.z < this.CLEANUP_Z) {
+                ent.sprite.destroy();
+                this.entities.splice(i, 1);
+            }
+        }
+
+        // ===== spawn =====
+        this.spawnTimer += delta;
+
+        if (this.spawnTimer > this.nextSpawnIn) {
+            this.spawnTimer = 0;
+            this.nextSpawnIn = Phaser.Math.Between(900, 1400);
+            this.spawnWave();
+        }
     }
 }
