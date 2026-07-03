@@ -223,7 +223,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     scaleFor(t) {
-        return 1.2 - t;
+        return 0.6 + (1 - t) * 0.6;
     }
 
     updateEntity(ent) {
@@ -306,56 +306,67 @@ export default class GameScene extends Phaser.Scene {
     // =========================
     update(time, delta) {
 
-        if (this.gameOver) return;
+    if (this.gameOver) return;
 
-        const dt = delta / 1000;
+    const dt = delta / 1000;
 
-        // SPEED FEEL
-        this.elapsedTime += dt;
-        this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * 0.6);
+    // =========================
+    // SPEED
+    // =========================
+    this.elapsedTime += dt;
+    this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * 0.6);
 
-        // WORLD MOTION FEEL
-        this.background.tilePositionY += this.zSpeed * 0.15;
-        this.groundStrip.tilePositionY += this.zSpeed * 0.25;
+    // =========================
+    // WORLD MOTION (FIXED - NO FALLING FEEL)
+    // =========================
+    this.background.tilePositionY -= this.zSpeed * 0.08;
+    this.groundStrip.tilePositionY -= this.zSpeed * 0.12;
 
-        // CAMERA FEEL
-        this.cameras.main.setZoom(this.zSpeed > 45 ? 1.08 : 1.05);
+    // =========================
+    // CAMERA STABILITY (FIX IMPORTANT)
+    // =========================
+    this.cameras.main.setZoom(this.zSpeed > 45 ? 1.06 : 1.04);
 
-        // PLAYER BREATHE FEEL
-        this.player.y = this.baseY + Math.sin(time * 0.01) * 1.5;
+    // ❌ IMPORTANT FIX: REMOVE BOBBING THAT BREAKS JUMP
+    
+    // =========================
+    // SCORE
+    // =========================
+    this.score += dt * 12;
+    this.scoreText.setText("Score : " + Math.floor(this.score));
 
-        // SCORE
-        this.score += dt * 12;
-        this.scoreText.setText("Score : " + Math.floor(this.score));
+    // =========================
+    // ENTITIES
+    // =========================
+    for (let i = this.entities.length - 1; i >= 0; i--) {
 
-        // ENTITIES
-        for (let i = this.entities.length - 1; i >= 0; i--) {
+        const e = this.entities[i];
 
-            const e = this.entities[i];
+        e.z -= this.zSpeed * dt;
 
-            e.z -= this.zSpeed * dt;
+        this.updateEntity(e);
 
-            this.updateEntity(e);
-
-            if (e.lane === this.currentLane && e.z <= this.HIT_Z) {
-                this.resolveEntity(e, i);
-            }
-
-            if (e.z <= this.CLEANUP_Z) {
-                e.sprite.destroy();
-                this.entities.splice(i, 1);
-            }
+        if (e.lane === this.currentLane && e.z <= this.HIT_Z) {
+            this.resolveEntity(e, i);
         }
 
-        // SPAWN
-        this.spawnTimer += delta;
-
-        if (this.spawnTimer > this.nextSpawnIn) {
-            this.spawnTimer = 0;
-            this.nextSpawnIn = Phaser.Math.Between(1100, 1600);
-            this.spawnWave();
+        if (e.z <= this.CLEANUP_Z) {
+            e.sprite.destroy();
+            this.entities.splice(i, 1);
         }
     }
+
+    // =========================
+    // SPAWN
+    // =========================
+    this.spawnTimer += delta;
+
+    if (this.spawnTimer > this.nextSpawnIn) {
+        this.spawnTimer = 0;
+        this.nextSpawnIn = Phaser.Math.Between(1200, 1700);
+        this.spawnWave();
+    }
+}
 
     // =========================
     // SPAWN SYSTEM
