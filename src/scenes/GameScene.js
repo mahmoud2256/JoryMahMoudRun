@@ -41,8 +41,8 @@ export default class GameScene extends Phaser.Scene {
 
         this.horizonY = height * 0.50;
         this.nearHalfWidth = width * 0.28;
-        this.farHalfWidth = width * 0.005;
-        this.SPAWN_Z = 140;
+        this.farHalfWidth = width * 0.08;
+        this.SPAWN_Z = 220;
         this.HIT_Z = 8;
         this.CLEANUP_Z = -6;
         this.currentLane = 1;
@@ -400,7 +400,7 @@ export default class GameScene extends Phaser.Scene {
         else if (type === "bar") sprite = this.add.image(0, 0, "barTexture");
         const ent = {
             type, lane,
-            z: this.SPAWN_Z + 30 + zOffset,
+            z: this.SPAWN_Z + zOffset,
             sprite,
             resolved: false,
             nearSize: type === "coin" ? 34 : 70,
