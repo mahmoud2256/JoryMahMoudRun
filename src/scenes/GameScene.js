@@ -15,9 +15,7 @@ export default class GameScene extends Phaser.Scene {
         // خلفية ثابتة تملأ الشاشة
         // =========================
         this.background = this.add.image(width / 2, height / 2, "background");
-        const bg = this.textures.get("background").getSourceImage();
-        const bgScale = Math.max(width / bg.width, height / bg.height);
-        this.background.setScale(bgScale);
+        this.background.setDisplaySize(width, height);
         this.background.setDepth(0);
 
         // =========================
@@ -36,9 +34,9 @@ export default class GameScene extends Phaser.Scene {
         // nearHalfWidth = نص عرض المسارات قرب اللاعب
         // farHalfWidth = نص عرض المسارات عند الأفق
         // =========================
-        this.horizonY = height * 0.44;
-        this.nearHalfWidth = width * 0.38;
-        this.farHalfWidth = width * 0.06;
+        this.horizonY = height * 0.48;
+        this.nearHalfWidth = width * 0.36;
+        this.farHalfWidth = width * 0.05;
 
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
