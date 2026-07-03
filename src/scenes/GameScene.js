@@ -11,9 +11,9 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-    // =========================
-    // BACKGROUND (STATIC)
-    // =========================
+        // =========================
+        // BACKGROUND (STATIC)
+        // =========================
         this.background = this.add.tileSprite(
             width / 2,
             height / 2,
@@ -23,9 +23,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.background.setDepth(0);
 
-    // =========================
-    // GROUND (MOVING ONLY)
-    // =========================
+        // =========================
+        // GROUND (MOVING ONLY)
+        // =========================
         this.groundY = height - 110;
 
         this.ground = this.add.tileSprite(
@@ -37,52 +37,46 @@ export default class GameScene extends Phaser.Scene {
         );
         this.ground.setDepth(1);
 
-    // =========================
-    // CAMERA EFFECTS
-    // =========================
-        this.cameraShakePower = 0;
-
-    // =========================
-    // LANES SYSTEM
-    // =========================
+        // =========================
+        // LANES
+        // =========================
         this.currentLane = 1;
-        this.lanesX = [0, 1, 2];
+        this.laneSpacing = 140;
 
-        this.horizonY = height * 0.35;
-        this.nearWidth = width * 0.42;
-        this.farWidth = width * 0.02;
+        this.getLaneX = (lane) => {
+            return width / 2 + (lane - 1) * this.laneSpacing;
+        };
 
-    // =========================
-    // PLAYER
-    // =========================
+        // =========================
+        // PLAYER
+        // =========================
         this.player = this.add.image(
-            this.laneX(1),
-            this.groundY - 80,
+            this.getLaneX(this.currentLane),
+            this.groundY - 60,
             "playerRun"
         );
 
-        this.player.setDepth(50);
+        this.player.setDepth(10);
 
-        this.playerBaseY = this.player.y;
+        this.baseY = this.player.y;
 
         this.isJumping = false;
         this.isDucking = false;
 
-        // Lean effect
-        this.playerLean = 0;
+        // =========================
+        // SPEED
+        // =========================
+        this.speed = 8;
+        this.maxSpeed = 25;
 
-    // =========================
-    // GAME STATE
-    // =========================
+        // =========================
+        // ENTITIES
+        // =========================
         this.entities = [];
 
-        this.speed = 18;
-        this.maxSpeed = 60;
-        this.speedIncrease = 0.02;
-
-    // =========================
-    // INPUT
-    // =========================
+        // =========================
+        // INPUT
+        // =========================
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.input.on("pointerdown", (p) => {
@@ -91,8 +85,9 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.input.on("pointerup", (p) => {
-            let dx = p.x - this.startX;
-            let dy = p.y - this.startY;
+
+            const dx = p.x - this.startX;
+            const dy = p.y - this.startY;
 
             if (Math.abs(dx) > Math.abs(dy)) {
                 if (dx > 40) this.changeLane(1);
@@ -103,100 +98,93 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
-    // =========================
-    // SPAWN TIMER
-    // =========================
+        // =========================
+        // SPAWN TIMER
+        // =========================
         this.spawnTimer = 0;
         this.spawnRate = 1200;
+
+        // =========================
+        // SCORE
+        // =========================
+        this.score = 0;
+        this.scoreText = this.add.text(20, 20, "Score: 0", {
+            fontSize: "20px",
+            color: "#fff"
+        }).setDepth(100);
     }
 
     // =========================
-    // LANE POSITION
+    // UPDATE LOOP
     // =========================
-    laneX(lane) {
-        const center = this.scale.width / 2;
-        const spacing = 140;
-        return center + (lane - 1) * spacing;
-    }
-}
     update(time, delta) {
 
-        const dt = delta / 1000;
+        const dt = delta / 16;
 
-    // =========================
-    // SPEED INCREASE (SUBWAY FEEL)
-    // =========================
-        this.speed = Math.min(this.maxSpeed, this.speed + this.speedIncrease);
+        // speed increase
+        this.speed += 0.01;
+        this.speed = Math.min(this.speed, this.maxSpeed);
 
-    // =========================
-    // GROUND MOVEMENT ONLY
-    // =========================
-        this.ground.tilePositionY -= this.speed * 6 * dt;
+        // move ground only
+        this.ground.tilePositionY -= this.speed * 2;
 
-    // =========================
-    // PLAYER LEAN EFFECT RESET
-    // =========================
-        this.playerLean *= 0.85;
-        this.player.x = Phaser.Math.Linear(
-            this.player.x,
-            this.laneX(this.currentLane) + this.playerLean,
-            0.15
-        );
+        // player reset
+        if (!this.isJumping) {
+            this.player.y = Phaser.Math.Linear(this.player.y, this.baseY, 0.2);
+        }
 
-    // =========================
-    // JUMP UPDATE
-    // =========================
+        // jump
         if (this.isJumping) {
-            this.player.y -= 8;
-            if (this.player.y <= this.playerBaseY - 120) {
+            this.player.y -= 6;
+            if (this.player.y < this.baseY - 120) {
                 this.isJumping = false;
             }
-        } else {
-            this.player.y = Phaser.Math.Linear(this.player.y, this.playerBaseY, 0.2);
         }
 
-    // =========================
-    // CAMERA SHAKE
-    // =========================
-        if (this.cameraShakePower > 0) {
-            this.cameras.main.shake(50, this.cameraShakePower);
-            this.cameraShakePower *= 0.9;
-        }
-
-    // =========================
-    // SPAWN TIMER
-    // =========================
+        // spawn
         this.spawnTimer += delta;
-
         if (this.spawnTimer > this.spawnRate) {
             this.spawnTimer = 0;
-            this.spawnObstacle();
+            this.spawn();
         }
 
-    // =========================
-    // UPDATE ENTITIES
-    // =========================
+        // update entities
         for (let i = this.entities.length - 1; i >= 0; i--) {
-            let e = this.entities[i];
-            e.z -= this.speed * dt;
 
-            this.updateEntity(e);
+            const e = this.entities[i];
+            e.z -= this.speed;
 
-            if (e.z < -10) {
+            const scale = Phaser.Math.Clamp(1 - (e.z / 120), 0.2, 1.5);
+
+            e.sprite.x = this.getLaneX(e.lane);
+            e.sprite.y = this.baseY - e.z;
+            e.sprite.setScale(scale);
+
+            // collision
+            if (e.z < 20 && e.lane === this.currentLane) {
+                this.hit(e, i);
+            }
+
+            // remove
+            if (e.z < -50) {
                 e.sprite.destroy();
                 this.entities.splice(i, 1);
             }
         }
+
+        // score
+        this.score += 0.1;
+        this.scoreText.setText("Score: " + Math.floor(this.score));
     }
 
     // =========================
-    // LANE CHANGE
+    // LANES
     // =========================
     changeLane(dir) {
         this.currentLane += dir;
         this.currentLane = Phaser.Math.Clamp(this.currentLane, 0, 2);
 
-        this.playerLean = dir * 30;
+        this.player.x = this.getLaneX(this.currentLane);
     }
 
     // =========================
@@ -205,7 +193,6 @@ export default class GameScene extends Phaser.Scene {
     jump() {
         if (this.isJumping) return;
         this.isJumping = true;
-        this.player.y = this.playerBaseY;
     }
 
     // =========================
@@ -213,6 +200,7 @@ export default class GameScene extends Phaser.Scene {
     // =========================
     duck() {
         if (this.isDucking) return;
+
         this.isDucking = true;
 
         this.tweens.add({
@@ -225,171 +213,45 @@ export default class GameScene extends Phaser.Scene {
                 this.player.scaleY = 1;
             }
         });
-    }    
-    
+    }
+
     // =========================
-    // SPAWN OBSTACLE / COINS
+    // SPAWN
     // =========================
-    spawnObstacle() {
+    spawn() {
 
         const lane = Phaser.Math.Between(0, 2);
-        const typeRoll = Math.random();
-
-        let type = "bar";
-
-        if (typeRoll < 0.5) type = "bar";
-        else type = "coin";
-
-        const spriteKey = type === "coin" ? "coin" : "barTexture";
+        const type = Math.random() > 0.5 ? "bar" : "coin";
 
         const sprite = this.add.image(
-            this.laneX(lane),
-            this.horizonY,
-            spriteKey
+            this.getLaneX(lane),
+            this.baseY - 200,
+            type === "coin" ? "coin" : "barTexture"
         );
 
-        sprite.setDepth(10);
+        sprite.setDepth(5);
 
-        const entity = {
-            sprite: sprite,
-            lane: lane,
-            type: type,
-
-            z: 100,
-
-            baseSize: type === "coin" ? 30 : 80
-        };
-
-        this.entities.push(entity);
+        this.entities.push({
+            sprite,
+            lane,
+            type,
+            z: 120
+        });
     }
 
     // =========================
-    // UPDATE ENTITY (3D FEEL)
+    // HIT
     // =========================
-    updateEntity(e) {
+    hit(e, index) {
 
-        const t = e.z / 100;
-
-        const scale = Phaser.Math.Linear(0.1, 1.2, 1 - t);
-
-        const x = this.laneX(e.lane);
-        const y = Phaser.Math.Linear(this.horizonY, this.groundY, 1 - t);
-
-        e.sprite.x = x;
-        e.sprite.y = y;
-
-        e.sprite.setScale(scale);
-
-        e.sprite.setDepth(10 + (1 - t) * 50);
-
-        // collision check
-        if (t < 0.15 && e.lane === this.currentLane) {
-
-            this.hit(e);
-
-        }
-    }
-
-    // =========================
-    // COLLISION
-    // =========================
-    hit(e) {
-
-        if (e.type === "coin") {
-            e.sprite.destroy();
-            e.type = "taken";
-            return;
-        }
-
-        // obstacle hit
-        this.cameraShakePower = 0.02;
-
-        this.player.setTint(0xff0000);
+        e.sprite.setTint(0xff0000);
 
         this.time.delayedCall(200, () => {
-            this.player.clearTint();
+            e.sprite.clearTint();
         });
 
-        // reset player position slightly
-        this.player.x -= 20;
+        // reset penalty
+        this.speed = 5;
+        this.player.x -= 10;
     }
-
-    // =========================
-    // SCORE UPDATE
-    // =========================
-    updateScore() {
-
-        if (!this.score) this.score = 0;
-
-        this.score += 0.1;
-
-        if (!this.scoreText) {
-            this.scoreText = this.add.text(20, 20, "Score: 0", {
-                fontSize: "22px",
-                color: "#ffffff"
-            });
-            this.scoreText.setDepth(100);
-        }
-
-        this.scoreText.setText("Score: " + Math.floor(this.score));
-    }
-
-    // =========================
-    // GAME OVER
-    // =========================
-    gameOver() {
-
-        this.physics.pause();
-
-        this.add.rectangle(
-            this.scale.width / 2,
-            this.scale.height / 2,
-            this.scale.width,
-            this.scale.height,
-            0x000000,
-            0.6
-        ).setDepth(200);
-
-        this.add.text(
-            this.scale.width / 2,
-            this.scale.height / 2 - 80,
-            "GAME OVER",
-            {
-                fontSize: "42px",
-                color: "#ff3333",
-                fontStyle: "bold"
-            }
-        ).setOrigin(0.5).setDepth(201);
-
-        this.add.text(
-            this.scale.width / 2,
-            this.scale.height / 2,
-            "Tap to Restart",
-            {
-                fontSize: "22px",
-                color: "#ffffff"
-            }
-        ).setOrigin(0.5).setDepth(201);
-
-        this.input.once("pointerdown", () => {
-            this.scene.restart();
-        });
-    }
-
-    // =========================
-    // FINAL UPDATE HOOK FIX
-    // =========================
-    lateUpdate() {
-
-    // update score every frame
-        this.updateScore();
-
-    // clean missing entities
-        for (let i = this.entities.length - 1; i >= 0; i--) {
-
-            if (!this.entities[i].sprite || !this.entities[i].sprite.active) {
-                this.entities.splice(i, 1);
-                this.lateUpdate();
-            }
-        }
-    }
+}
