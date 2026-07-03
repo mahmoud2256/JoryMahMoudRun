@@ -240,7 +240,9 @@ export default class GameScene extends Phaser.Scene {
             const size = ent.nearSize * rel;
             ent.sprite.setDisplaySize(size, size);
         } else if (ent.type === "bar") {
-            ent.sprite.setDisplaySize(ent.nearWidth * rel, ent.nearHeight * rel);
+            const size = Phaser.Math.Clamp(ent.nearWidth * rel, 90, 260);
+
+            ent.sprite.setDisplaySize(size, size);
         }
     }
 
