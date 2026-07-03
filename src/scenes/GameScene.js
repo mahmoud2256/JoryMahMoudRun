@@ -1,257 +1,108 @@
 import Phaser from "phaser";
 
 export default class GameScene extends Phaser.Scene {
-
     constructor() {
         super("GameScene");
     }
 
     create() {
+        // ===== المقاسات =====
+        this.width = this.scale.width;
+        this.height = this.scale.height;
 
-        const width = this.scale.width;
-        const height = this.scale.height;
-
-        // =========================
-        // BACKGROUND (STATIC)
-        // =========================
-        this.background = this.add.tileSprite(
-            width / 2,
-            height / 2,
-            width,
-            height,
+        // ===== الخلفية (ثابتة وتغطي الشاشة) =====
+        this.background = this.add.image(
+            this.width / 2,
+            this.height / 2,
             "background"
         );
+
+        this.background.setDisplaySize(this.width, this.height);
         this.background.setDepth(0);
 
-        // =========================
-        // GROUND (MOVING ONLY)
-        // =========================
-        this.groundY = height - 110;
+        // ===== الأرض =====
+        this.groundY = this.height - 120;
 
-        this.ground = this.add.tileSprite(
-            width / 2,
-            this.groundY + 55,
-            width,
-            110,
-            "ground"
-        );
-        this.ground.setDepth(1);
+        // ===== اللاعب =====
+        this.player = this.physics.add.sprite(120, this.groundY, "player");
+        this.player.setCollideWorldBounds(true);
+        this.player.setGravityY(900);
+        this.player.setScale(1);
 
-        // =========================
-        // LANES
-        // =========================
-        this.currentLane = 1;
-        this.laneSpacing = 140;
+        // ===== الحواجز =====
+        this.obstacles = this.physics.add.group();
 
-        this.getLaneX = (lane) => {
-            return width / 2 + (lane - 1) * this.laneSpacing;
-        };
+        this.spawnTimer = this.time.addEvent({
+            delay: 1500,
+            loop: true,
+            callback: this.spawnObstacle,
+            callbackScope: this
+        });
 
-        // =========================
-        // PLAYER
-        // =========================
-        this.player = this.add.image(
-            this.getLaneX(this.currentLane),
-            this.groundY - 60,
-            "playerRun"
+        // ===== تصادم =====
+        this.physics.add.collider(
+            this.player,
+            this.obstacles,
+            this.hitObstacle,
+            null,
+            this
         );
 
-        this.player.setDepth(10);
+        // ===== التحكم باللمس =====
+        this.input.on("pointerdown", () => {
+            this.jump();
+        });
 
-        this.baseY = this.player.y;
-
-        this.isJumping = false;
-        this.isDucking = false;
-
-        // =========================
-        // SPEED
-        // =========================
-        this.speed = 8;
-        this.maxSpeed = 25;
-
-        // =========================
-        // ENTITIES
-        // =========================
-        this.entities = [];
-
-        // =========================
-        // INPUT
-        // =========================
+        // ===== كيبورد =====
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.input.on("pointerdown", (p) => {
-            this.startX = p.x;
-            this.startY = p.y;
-        });
+        // ===== سرعة اللعبة =====
+        this.gameSpeed = 260;
+    }
 
-        this.input.on("pointerup", (p) => {
+    update() {
+        // قفز بالكيبورد
+        if (this.cursors.space.isDown || this.cursors.up.isDown) {
+            this.jump();
+        }
 
-            const dx = p.x - this.startX;
-            const dy = p.y - this.startY;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-                if (dx > 40) this.changeLane(1);
-                else if (dx < -40) this.changeLane(-1);
-            } else {
-                if (dy < -40) this.jump();
-                else if (dy > 40) this.duck();
+        // حذف الحواجز اللي خرجت برا الشاشة
+        this.obstacles.getChildren().forEach((obstacle) => {
+            if (obstacle.x < -50) {
+                obstacle.destroy();
             }
         });
-
-        // =========================
-        // SPAWN TIMER
-        // =========================
-        this.spawnTimer = 0;
-        this.spawnRate = 1200;
-
-        // =========================
-        // SCORE
-        // =========================
-        this.score = 0;
-        this.scoreText = this.add.text(20, 20, "Score: 0", {
-            fontSize: "20px",
-            color: "#fff"
-        }).setDepth(100);
     }
 
-    // =========================
-    // UPDATE LOOP
-    // =========================
-    update(time, delta) {
-
-        const dt = delta / 16;
-
-        // speed increase
-        this.speed += 0.01;
-        this.speed = Math.min(this.speed, this.maxSpeed);
-
-        // move ground only
-        this.ground.tilePositionY -= this.speed * 2;
-
-        // player reset
-        if (!this.isJumping) {
-            this.player.y = Phaser.Math.Linear(this.player.y, this.baseY, 0.2);
-        }
-
-        // jump
-        if (this.isJumping) {
-            this.player.y -= 6;
-            if (this.player.y < this.baseY - 120) {
-                this.isJumping = false;
-            }
-        }
-
-        // spawn
-        this.spawnTimer += delta;
-        if (this.spawnTimer > this.spawnRate) {
-            this.spawnTimer = 0;
-            this.spawn();
-        }
-
-        // update entities
-        for (let i = this.entities.length - 1; i >= 0; i--) {
-
-            const e = this.entities[i];
-            e.z -= this.speed;
-
-            const scale = Phaser.Math.Clamp(1 - (e.z / 120), 0.2, 1.5);
-
-            e.sprite.x = this.getLaneX(e.lane);
-            e.sprite.y = this.baseY - e.z;
-            e.sprite.setScale(scale);
-
-            // collision
-            if (e.z < 20 && e.lane === this.currentLane) {
-                this.hit(e, i);
-            }
-
-            // remove
-            if (e.z < -50) {
-                e.sprite.destroy();
-                this.entities.splice(i, 1);
-            }
-        }
-
-        // score
-        this.score += 0.1;
-        this.scoreText.setText("Score: " + Math.floor(this.score));
-    }
-
-    // =========================
-    // LANES
-    // =========================
-    changeLane(dir) {
-        this.currentLane += dir;
-        this.currentLane = Phaser.Math.Clamp(this.currentLane, 0, 2);
-
-        this.player.x = this.getLaneX(this.currentLane);
-    }
-
-    // =========================
-    // JUMP
-    // =========================
     jump() {
-        if (this.isJumping) return;
-        this.isJumping = true;
+        if (this.player.body.touching.down) {
+            this.player.setVelocityY(-520);
+        }
     }
 
-    // =========================
-    // DUCK
-    // =========================
-    duck() {
-        if (this.isDucking) return;
-
-        this.isDucking = true;
-
-        this.tweens.add({
-            targets: this.player,
-            scaleY: 0.6,
-            duration: 150,
-            yoyo: true,
-            onComplete: () => {
-                this.isDucking = false;
-                this.player.scaleY = 1;
-            }
-        });
-    }
-
-    // =========================
-    // SPAWN
-    // =========================
-    spawn() {
-
-        const lane = Phaser.Math.Between(0, 2);
-        const type = Math.random() > 0.5 ? "bar" : "coin";
-
-        const sprite = this.add.image(
-            this.getLaneX(lane),
-            this.baseY - 200,
-            type === "coin" ? "coin" : "barTexture"
+    spawnObstacle() {
+        const obstacle = this.obstacles.create(
+            this.width + 50,
+            this.groundY,
+            "obstacle"
         );
 
-        sprite.setDepth(5);
+        obstacle.setVelocityX(-this.gameSpeed);
+        obstacle.setImmovable(true);
+        obstacle.setGravityY(0);
+        obstacle.setScale(1);
 
-        this.entities.push({
-            sprite,
-            lane,
-            type,
-            z: 120
-        });
+        // ارتفاع بسيط لو عايز تنويع
+        obstacle.y = this.groundY;
     }
 
-    // =========================
-    // HIT
-    // =========================
-    hit(e, index) {
+    hitObstacle() {
+        // إعادة تشغيل بسيطة عند الاصطدام
+        this.physics.pause();
+        this.player.setTint(0xff0000);
 
-        e.sprite.setTint(0xff0000);
-
-        this.time.delayedCall(200, () => {
-            e.sprite.clearTint();
+        this.time.delayedCall(800, () => {
+            this.scene.restart();
         });
-
-        // reset penalty
-        this.speed = 5;
-        this.player.x -= 10;
     }
 }
