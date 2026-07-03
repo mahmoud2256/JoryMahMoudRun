@@ -11,19 +11,14 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // ===== الخلفية =====
+        // ===== الخلفية (ثابتة Full Screen) =====
         this.background = this.add.image(
             width / 2,
             height / 2,
             "background"
-
         );
 
-        this.background.setDisplaySize(
-            this.scale.width,
-            this.scale.height
-        );
-            
+        this.background.setDisplaySize(width, height);
         this.background.setScrollFactor(0);
         this.background.setDepth(0);
 
@@ -64,10 +59,9 @@ export default class GameScene extends Phaser.Scene {
         this.player.setDepth(50);
 
         this.baseY = this.groundY - (this.player.displayHeight / 2);
-
         this.player.y = this.baseY;
 
-        // ===== حالات =====
+        // ===== states =====
         this.isJumping = false;
         this.isDucking = false;
         this.gameOver = false;
@@ -75,23 +69,23 @@ export default class GameScene extends Phaser.Scene {
         // ===== entities =====
         this.entities = [];
 
-        // ===== سرعة =====
+        // ===== speed =====
         this.zBaseSpeed = 16;
         this.zMaxSpeed = 55;
         this.zSpeed = this.zBaseSpeed;
         this.elapsedTime = 0;
 
-        // ===== UI =====
+        // ===== score =====
         this.score = 0;
 
         this.scoreText = this.add.text(20, 20, "Score: 0", {
             fontSize: "26px",
-            color: "#fff",
-            stroke: "#000",
+            color: "#ffffff",
+            stroke: "#000000",
             strokeThickness: 4
         }).setDepth(100);
 
-        // ===== Controls =====
+        // ===== controls =====
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.input.on("pointerdown", () => {
@@ -99,7 +93,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.spawnTimer = 0;
-        this.nextSpawnIn = 1400;
+        this.nextSpawnIn = 1200;
     }
 
     // ===== lane system =====
@@ -126,23 +120,20 @@ export default class GameScene extends Phaser.Scene {
         return 1 + (0.12 - 1) * eased;
     }
 
-    // ===== entity update =====
+    // ===== FIXED entity rendering =====
     updateEntity(ent) {
 
         const t = this.depthT(ent.z);
         const x = this.laneXAtDepth(ent.lane, t);
-        // IMPORTANT FIX: تثبيت كل شيء على الأرض
-        let y = this.baseY;
         const y = this.screenY(t);
         const s = this.scaleByDepth(t);
 
         ent.sprite.x = x;
         ent.sprite.y = y;
-
         ent.sprite.setDepth(10 + (1 - t) * 20);
 
         if (ent.type === "coin") {
-            const size = ent.baseSize * s;
+            const size = ent.size * s;
             ent.sprite.setDisplaySize(size, size);
         }
 
@@ -151,29 +142,14 @@ export default class GameScene extends Phaser.Scene {
         }
 
         if (ent.type === "ground") {
-            const size = ent.baseSize * s;
+            const size = ent.size * s;
             ent.sprite.setDisplaySize(size, size);
         }
     }
 
-    // ===== input =====
-    changeLane(dir) {
-        const newLane = this.currentLane + dir;
-        if (newLane < 0 || newLane > 2) return;
-        if (this.isDucking) return;
-
-        this.currentLane = newLane;
-
-        this.tweens.add({
-            targets: this.player,
-            x: this.laneXAtDepth(this.currentLane, 0),
-            duration: 150,
-            ease: "Sine.easeOut"
-        });
-    }
-
+    // ===== jump =====
     tryJump() {
-        if (this.isJumping || this.isDucking) return;
+        if (this.isJumping) return;
 
         this.isJumping = true;
 
@@ -195,19 +171,26 @@ export default class GameScene extends Phaser.Scene {
 
         let sprite;
 
-        if (type === "coin") sprite = this.add.image(0, 0, "coin");
-        if (type === "bar") {sprite = this.add.rectangle(0, 0, 120, 40, 0xff4444);}
-        if (type === "ground") {sprite = this.add.rectangle(0, 0, 70, 70, 0x00ff00);}
-        if (type === "coin") {sprite = this.add.circle(0, 0, 20, 0xffff00);}
+        if (type === "bar") {
+            sprite = this.add.rectangle(0, 0, 120, 40, 0xff4444);
+        }
+
+        else if (type === "ground") {
+            sprite = this.add.rectangle(0, 0, 70, 70, 0x00ff00);
+        }
+
+        else {
+            sprite = this.add.circle(0, 0, 18, 0xffff00);
+        }
 
         const ent = {
             type,
             lane,
             z: this.SPAWN_Z + zOffset,
             sprite,
-            baseSize: 60,
-            w: 110,
-            h: 90
+            size: 50,
+            w: 120,
+            h: 40
         };
 
         this.entities.push(ent);
@@ -215,14 +198,17 @@ export default class GameScene extends Phaser.Scene {
     }
 
     spawnWave() {
+
         const lane = Phaser.Math.Between(0, 2);
         const r = Math.random();
 
         if (r < 0.4) {
             this.spawnEntity("bar", lane);
-        } else if (r < 0.7) {
+        }
+        else if (r < 0.7) {
             this.spawnEntity("ground", lane);
-        } else {
+        }
+        else {
             for (let i = 0; i < 3; i++) {
                 this.spawnEntity("coin", lane, i * 6);
             }
@@ -236,29 +222,33 @@ export default class GameScene extends Phaser.Scene {
 
         const dt = delta / 1000;
 
+        // speed
         this.elapsedTime += dt;
         this.zSpeed = Math.min(
             this.zMaxSpeed,
             this.zBaseSpeed + this.elapsedTime * 0.4
         );
 
-        // ===== parallax =====
-        this.background.tilePositionY -= this.zSpeed * dt * 1.2;
+        // background fixed (NO movement)
+        this.background.setScrollFactor(0);
+
+        // ground movement (optional feel)
         this.groundStrip.tilePositionY -= this.zSpeed * dt * 6;
 
-        // ===== controls =====
+        // controls
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
 
-        // ===== score =====
+        // score
         this.score += dt * 10;
         this.scoreText.setText("Score: " + Math.floor(this.score));
 
-        // ===== player fix position =====
+        // FIX PLAYER POSITION
         this.player.x = this.laneXAtDepth(this.currentLane, 0);
+        this.player.y = this.baseY;
 
-        // ===== entities =====
+        // entities update
         for (let i = this.entities.length - 1; i >= 0; i--) {
 
             const ent = this.entities[i];
@@ -267,7 +257,7 @@ export default class GameScene extends Phaser.Scene {
 
             this.updateEntity(ent);
 
-            // hit check
+            // collision
             if (!ent.hit && ent.lane === this.currentLane && ent.z <= this.HIT_Z) {
                 ent.hit = true;
 
@@ -278,7 +268,6 @@ export default class GameScene extends Phaser.Scene {
                     continue;
                 }
 
-                // hit obstacle
                 this.scene.restart();
                 return;
             }
@@ -290,7 +279,7 @@ export default class GameScene extends Phaser.Scene {
             }
         }
 
-        // ===== spawn =====
+        // spawn
         this.spawnTimer += delta;
 
         if (this.spawnTimer > this.nextSpawnIn) {
@@ -298,5 +287,11 @@ export default class GameScene extends Phaser.Scene {
             this.nextSpawnIn = Phaser.Math.Between(900, 1400);
             this.spawnWave();
         }
+    }
+
+    changeLane(dir) {
+        const newLane = this.currentLane + dir;
+        if (newLane < 0 || newLane > 2) return;
+        this.currentLane = newLane;
     }
 }
