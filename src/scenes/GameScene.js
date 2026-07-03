@@ -31,9 +31,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.35;
-        this.nearHalfWidth = width * 0.42;
-        this.farHalfWidth = width * 0.02;
+        this.horizonY = height * 0.44;
+        this.nearHalfWidth = width * 0.395;
+        this.farHalfWidth = width * 0.185;
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
@@ -206,7 +206,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     laneXAtDepth(laneIndexFloat, depthT) {
-        const cx = this.scale.width / 2;
+        const cx = this.scale.width / 2 - 17;
         const halfWidth = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * depthT;
         return cx + (laneIndexFloat - 1) * halfWidth;
     }
