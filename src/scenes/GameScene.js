@@ -379,8 +379,8 @@ export default class GameScene extends Phaser.Scene {
             sprite,
             resolved: false,
             nearSize: type === "coin" ? 46 : 70,
-            nearWidth: 110,
-            nearHeight: this.standHeight * 0.18
+            nearWidth: 220,
+            nearHeight: this.standHeight * 220
         };
         this.updateEntityVisual(ent);
         this.entities.push(ent);
