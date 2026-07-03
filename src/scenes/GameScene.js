@@ -39,10 +39,10 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.20;
-        this.nearHalfWidth = width * 0.26;
-        this.farHalfWidth = width * 0.09;
-        this.SPAWN_Z = 90;
+        this.horizonY = height * 0.48;
+        this.nearHalfWidth = width * 0.28;
+        this.farHalfWidth = width * 0.015;
+        this.SPAWN_Z = 140;
         this.HIT_Z = 8;
         this.CLEANUP_Z = -6;
         this.currentLane = 1;
@@ -206,7 +206,7 @@ export default class GameScene extends Phaser.Scene {
     laneXAtDepth(lane, depthT) {
         const center = this.scale.width / 2;
         const halfWidth = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * depthT;
-        return center + (lane - 1) * roadWidth;
+        return center + (lane - 1) * halfWidth;
     }
 
     depthTForZ(z) {
@@ -219,6 +219,7 @@ export default class GameScene extends Phaser.Scene {
             this.horizonY,
             this.baseY,
             1 - depthT
+            );
     }
 
     relativeScaleForDepth(depthT) {
@@ -227,11 +228,13 @@ export default class GameScene extends Phaser.Scene {
 
     updateEntityVisual(ent) {
         const depthT = this.depthTForZ(ent.z);
-        const screenX = this.laneXAtDepth(ent.lane, depthT);
-        const screenY = this.screenYForDepth(depthT);
-        const rel = this.relativeScaleForDepth(depthT);
-        ent.sprite.setPosition(screenX, screenY);
-        ent.sprite.setDepth(10 + (1 - depthT) * 20);
+        const x = this.laneXAtDepth(ent.lane, depthT);
+        const y = Phaser.Math.Linear(this.horizonY,this.baseY,1 - depthT);
+        const scale = Phaser.Math.Linear(0.05,1,1 - depthT);
+        ent.sprite.setPosition(x, y);
+        ent.sprite.setScale(scale);
+        ent.sprite.setDepth(20 + scale * 100);
+        }
         if (ent.type === "ground") {
             const size = ent.nearSize * rel;
             ent.sprite.setDisplaySize(size, size);
