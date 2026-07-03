@@ -12,7 +12,7 @@ export default class GameScene extends Phaser.Scene {
         const height = this.scale.height;
 
         // =========================
-        // BACKGROUND (FIX ONLY)
+        // BACKGROUND
         // =========================
         this.background = this.add.tileSprite(
             width / 2,
@@ -23,8 +23,10 @@ export default class GameScene extends Phaser.Scene {
         );
 
         this.background.setDepth(0);
-        this.background.setScrollFactor(0);
 
+        // =========================
+        // GROUND
+        // =========================
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
@@ -34,27 +36,35 @@ export default class GameScene extends Phaser.Scene {
             110,
             "ground"
         );
+
         this.groundStrip.setDepth(1);
 
         // =========================
-        // KEEP YOUR SYSTEM (UNCHANGED)
+        // CAMERA (UPGRADE)
+        // =========================
+        this.cameras.main.setLerp(0.08, 0.08);
+        this.cameras.main.setDeadzone(0, 150);
+
+        // =========================
+        // PERSPECTIVE SYSTEM
         // =========================
         this.horizonY = height * 0.35;
         this.nearHalfWidth = width * 0.42;
         this.farHalfWidth = width * 0.02;
+
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
 
         this.laneGraphics = this.add.graphics();
         this.laneGraphics.setDepth(2);
-        this.laneGraphics.lineStyle(2, 0xffffff, 0.25);
+        this.laneGraphics.lineStyle(2, 0xffffff, 0.2);
 
         const nearY = this.groundY;
 
-        [-0.5, 0.5, 1.5, 2.5].forEach((boundary) => {
-            const nearX = this.laneXAtDepth(boundary, 0);
-            const farX = this.laneXAtDepth(boundary, 1);
+        [-0.5, 0.5, 1.5, 2.5].forEach((b) => {
+            const nearX = this.laneXAtDepth(b, 0);
+            const farX = this.laneXAtDepth(b, 1);
 
             this.laneGraphics.beginPath();
             this.laneGraphics.moveTo(nearX, nearY);
@@ -62,11 +72,11 @@ export default class GameScene extends Phaser.Scene {
             this.laneGraphics.strokePath();
         });
 
+        // =========================
+        // PLAYER
+        // =========================
         this.currentLane = 1;
 
-        // =========================
-        // PLAYER (UNCHANGED)
-        // =========================
         const hasAnim = this.textures.exists("playerRunAnim");
 
         if (!this.anims.exists("run") && hasAnim) {
@@ -87,24 +97,13 @@ export default class GameScene extends Phaser.Scene {
             hasAnim ? "playerRunAnim" : "playerRun"
         );
 
-        const targetPlayerHeight = height * 0.16;
+        const targetH = height * 0.16;
+        const aspect = hasAnim ? (160 / 320) : (this.player.width / this.player.height);
 
-        const nativeAspect = hasAnim
-            ? (160 / 320)
-            : (this.player.width / this.player.height);
-
-        this.player.setDisplaySize(
-            targetPlayerHeight * nativeAspect,
-            targetPlayerHeight
-        );
-
-        this.baseScaleX = this.player.scaleX;
-        this.baseScaleY = this.player.scaleY;
-
+        this.player.setDisplaySize(targetH * aspect, targetH);
         this.player.setDepth(50);
 
-        this.standHeight = this.player.displayHeight;
-        this.baseY = this.groundY - (this.standHeight / 2);
+        this.baseY = this.groundY - this.player.displayHeight / 2;
         this.player.y = this.baseY;
 
         this.hasAnim = hasAnim;
@@ -116,299 +115,268 @@ export default class GameScene extends Phaser.Scene {
         this.invincible = false;
         this.gameOver = false;
 
-        const isDesktop = this.sys.game.device.os.desktop;
-        this.duckScaleFactor = isDesktop ? 0.55 : 0.4;
-
+        // =========================
+        // GAME SYSTEM
+        // =========================
         this.entities = [];
 
         this.zBaseSpeed = 16;
-        this.zMaxSpeed = 55;
-        this.zSpeed = this.zBaseSpeed;
-        this.zRampRate = 0.4;
+        this.zMaxSpeed = 60;
         this.elapsedTime = 0;
+        this.zSpeed = this.zBaseSpeed;
 
         // =========================
-        // HUD (UNCHANGED)
+        // FX
         // =========================
-        this.hudBackdrop = this.add.graphics();
-        this.hudBackdrop.setDepth(99);
-        this.hudBackdrop.fillStyle(0x000000, 0.35);
-        this.hudBackdrop.fillRoundedRect(10, 10, 175, 120, 12);
+        this.hitFX = (x, y) => {
+            const c = this.add.circle(x, y, 12, 0xff0000);
+            this.tweens.add({
+                targets: c,
+                alpha: 0,
+                scale: 3,
+                duration: 300,
+                onComplete: () => c.destroy()
+            });
+        };
 
+        this.coinFX = (x, y) => {
+            const c = this.add.circle(x, y, 8, 0xffd54f);
+            this.tweens.add({
+                targets: c,
+                alpha: 0,
+                scale: 2,
+                duration: 200,
+                onComplete: () => c.destroy()
+            });
+        };
+
+        // =========================
+        // HUD
+        // =========================
         this.score = 0;
+        this.coinsCollected = 0;
+        this.lives = 3;
 
         this.scoreText = this.add.text(20, 20, "Score : 0", {
             fontSize: "26px",
-            color: "#ffffff",
-            fontStyle: "bold",
-            stroke: "#000000",
-            strokeThickness: 4
-        });
-        this.scoreText.setDepth(100);
-
-        this.coinsCollected = 0;
+            color: "#fff"
+        }).setDepth(100);
 
         this.coinsText = this.add.text(20, 55, "Coins : 0", {
             fontSize: "22px",
-            color: "#ffd54f",
-            fontStyle: "bold",
-            stroke: "#000000",
-            strokeThickness: 3
-        });
-        this.coinsText.setDepth(100);
-
-        this.lives = 3;
+            color: "#ffd54f"
+        }).setDepth(100);
 
         this.lifeText = this.add.text(20, 90, "Lives : 3", {
             fontSize: "22px",
-            color: "#ff6666",
-            stroke: "#000000",
-            strokeThickness: 3
-        });
-        this.lifeText.setDepth(100);
+            color: "#ff6666"
+        }).setDepth(100);
 
         // =========================
-        // INPUT (UNCHANGED)
+        // INPUT
         // =========================
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        this.pointerStartX = 0;
-        this.pointerStartY = 0;
-        this.pointerStartTime = 0;
-        this.duckHoldActive = false;
-
-        const SWIPE_THRESHOLD = 35;
-        const SWIPE_MAX_TIME = 600;
-
-        this.input.on("pointerdown", (pointer) => {
-            if (this.gameOver) return;
-            this.pointerStartX = pointer.x;
-            this.pointerStartY = pointer.y;
-            this.pointerStartTime = this.time.now;
-            this.duckHoldActive = false;
+        this.input.on("pointerdown", (p) => {
+            this.startX = p.x;
+            this.startY = p.y;
+            this.startTime = this.time.now;
         });
 
-        this.input.on("pointermove", (pointer) => {
-            if (this.gameOver) return;
-            if (!pointer.isDown) return;
-            if (this.duckHoldActive) return;
-            if (this.isJumping) return;
+        this.input.on("pointerup", (p) => {
 
-            const deltaX = pointer.x - this.pointerStartX;
-            const deltaY = pointer.y - this.pointerStartY;
+            const dx = p.x - this.startX;
+            const dy = p.y - this.startY;
+            const dt = this.time.now - this.startTime;
 
-            if (deltaY > SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX)) {
-                this.duckHoldActive = true;
-                this.beginDuck();
-            }
-        });
+            if (dt < 600) {
 
-        this.input.on("pointerup", (pointer) => {
-            if (this.gameOver) return;
-
-            if (this.duckHoldActive) {
-                this.endDuck();
-                this.duckHoldActive = false;
-                return;
-            }
-
-            const deltaX = pointer.x - this.pointerStartX;
-            const deltaY = pointer.y - this.pointerStartY;
-            const deltaTime = this.time.now - this.pointerStartTime;
-
-            if (deltaTime <= SWIPE_MAX_TIME) {
-
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    if (deltaX > SWIPE_THRESHOLD) this.changeLane(1);
-                    else if (deltaX < -SWIPE_THRESHOLD) this.changeLane(-1);
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > 30) this.changeLane(1);
+                    else if (dx < -30) this.changeLane(-1);
                 } else {
-                    if (deltaY < -SWIPE_THRESHOLD) this.tryJump();
-                    else if (deltaY > SWIPE_THRESHOLD) this.quickDuck();
+                    if (dy < -30) this.tryJump();
+                    else if (dy > 30) this.beginDuck();
                 }
             }
         });
 
         this.spawnTimer = 0;
-        this.nextSpawnIn = 1500;
+        this.nextSpawnIn = 1400;
     }
 
     // =========================
-    // EVERYTHING BELOW (UNCHANGED)
+    // CORE MATH
     // =========================
-
-    laneXAtDepth(laneIndexFloat, depthT) {
+    laneXAtDepth(lane, t) {
         const cx = this.scale.width / 2;
-        const halfWidth = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * depthT;
-        return cx + (laneIndexFloat - 1) * halfWidth;
+        const w = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * t;
+        return cx + (lane - 1) * w;
     }
 
-    depthTForZ(z) {
+    depthT(z) {
         return Phaser.Math.Clamp(z / this.SPAWN_Z, 0, 1);
     }
 
-    screenYForDepth(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return this.baseY + (this.horizonY - this.baseY) * eased;
+    screenY(t) {
+        return this.baseY + (this.horizonY - this.baseY) * Math.pow(t, 1.6);
     }
 
-    relativeScaleForDepth(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return 1.0 + (0.12 - 1.0) * eased;
+    scaleFor(t) {
+        return 1.2 - t;
     }
 
-    updateEntityVisual(ent) {
-        const depthT = this.depthTForZ(ent.z);
-        const screenX = this.laneXAtDepth(ent.lane, depthT);
-        const screenY = this.screenYForDepth(depthT);
-        const rel = this.relativeScaleForDepth(depthT);
+    updateEntity(ent) {
+        const t = this.depthT(ent.z);
 
-        ent.sprite.setPosition(screenX, screenY);
-        ent.sprite.setDepth(10 + (1 - depthT) * 20);
+        ent.sprite.x = this.laneXAtDepth(ent.lane, t);
+        ent.sprite.y = this.screenY(t);
 
-        if (ent.type === "ground") {
-            ent.sprite.setDisplaySize(ent.nearSize * rel, ent.nearSize * rel);
-        } else if (ent.type === "coin") {
-            ent.sprite.setDisplaySize(ent.nearSize * rel, ent.nearSize * rel);
-        } else if (ent.type === "bar") {
-            ent.sprite.setDisplaySize(ent.nearWidth * rel, ent.nearHeight * rel);
-        }
+        const s = this.scaleFor(t);
+        ent.sprite.setScale(s);
+
+        ent.sprite.setDepth(10 + (1 - t) * 20);
     }
 
-    changeLane(direction) {
-        const newLane = this.currentLane + direction;
-        if (newLane < 0 || newLane > 2) return;
-        if (this.isDucking) return;
+    // =========================
+    // PLAYER
+    // =========================
+    changeLane(dir) {
 
-        this.currentLane = newLane;
+        const nl = this.currentLane + dir;
+        if (nl < 0 || nl > 2) return;
+
+        this.currentLane = nl;
 
         this.tweens.add({
             targets: this.player,
             x: this.laneXAtDepth(this.currentLane, 0),
-            duration: 180,
+            duration: 120,
             ease: "Sine.easeOut"
         });
     }
 
     tryJump() {
-        if (this.isJumping || this.isDucking) return;
+
+        if (this.isJumping) return;
 
         this.isJumping = true;
 
-        if (!this.hasAnim) this.player.setTexture("playerJump");
-        if (this.hasAnim) this.player.stop();
-
-        const jumpHeight = this.standHeight * 1.55;
+        const h = this.player.displayHeight * 1.5;
 
         this.tweens.add({
             targets: this.player,
-            y: this.baseY - jumpHeight,
-            duration: 300,
-            ease: "Sine.easeOut",
+            y: this.baseY - h,
+            duration: 250,
             yoyo: true,
+            ease: "Sine.easeOut",
             onComplete: () => {
                 this.isJumping = false;
                 this.player.y = this.baseY;
-                if (this.hasAnim) this.player.play("run");
             }
         });
     }
 
     beginDuck() {
-        if (this.isJumping || this.isDucking) return;
+
+        if (this.isDucking) return;
 
         this.isDucking = true;
 
         this.tweens.add({
             targets: this.player,
-            scaleY: this.baseScaleY * this.duckScaleFactor,
-            y: this.groundY - (this.standHeight * this.duckScaleFactor) / 2,
-            duration: 150
+            scaleY: 0.5,
+            duration: 120
         });
     }
 
     endDuck() {
-        if (!this.isDucking) return;
 
         this.isDucking = false;
 
         this.tweens.add({
             targets: this.player,
-            scaleY: this.baseScaleY,
-            y: this.baseY,
-            duration: 150
+            scaleY: 1,
+            duration: 120
         });
     }
 
-    quickDuck() {
-        if (this.isJumping || this.isDucking) return;
-
-        this.beginDuck();
-        this.time.delayedCall(550, () => this.endDuck());
-    }
-
+    // =========================
+    // UPDATE LOOP
+    // =========================
     update(time, delta) {
 
         if (this.gameOver) return;
 
         const dt = delta / 1000;
 
-        this.background.tilePositionY -= 2;
-        this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
-
+        // SPEED FEEL
         this.elapsedTime += dt;
-        this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
+        this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * 0.6);
 
+        // WORLD MOTION FEEL
+        this.background.tilePositionY += this.zSpeed * 0.15;
+        this.groundStrip.tilePositionY += this.zSpeed * 0.25;
+
+        // CAMERA FEEL
+        this.cameras.main.setZoom(this.zSpeed > 45 ? 1.08 : 1.05);
+
+        // PLAYER BREATHE FEEL
+        this.player.y = this.baseY + Math.sin(time * 0.01) * 1.5;
+
+        // SCORE
         this.score += dt * 12;
         this.scoreText.setText("Score : " + Math.floor(this.score));
 
+        // ENTITIES
         for (let i = this.entities.length - 1; i >= 0; i--) {
 
-            const ent = this.entities[i];
+            const e = this.entities[i];
 
-            ent.z -= this.zSpeed * dt;
+            e.z -= this.zSpeed * dt;
 
-            this.updateEntityVisual(ent);
+            this.updateEntity(e);
 
-            if (ent.z <= this.HIT_Z && ent.lane === this.currentLane) {
-                this.resolveEntity(ent, i);
+            if (e.lane === this.currentLane && e.z <= this.HIT_Z) {
+                this.resolveEntity(e, i);
             }
 
-            if (ent.z <= this.CLEANUP_Z) {
-                if (ent.sprite) ent.sprite.destroy();
+            if (e.z <= this.CLEANUP_Z) {
+                e.sprite.destroy();
                 this.entities.splice(i, 1);
             }
         }
 
+        // SPAWN
         this.spawnTimer += delta;
 
-        if (this.spawnTimer >= this.nextSpawnIn) {
+        if (this.spawnTimer > this.nextSpawnIn) {
             this.spawnTimer = 0;
-            this.nextSpawnIn = Phaser.Math.Between(1100, 1700);
+            this.nextSpawnIn = Phaser.Math.Between(1100, 1600);
             this.spawnWave();
         }
     }
 
-    spawnEntity(type, lane, zOffset = 0) {
+    // =========================
+    // SPAWN SYSTEM
+    // =========================
+    spawnEntity(type, lane, zOff = 0) {
 
-        let key = "slime";
-
-        if (type === "coin") key = "coin";
-        else if (type === "bar") key = "barTexture";
+        const key =
+            type === "coin" ? "coin" :
+            type === "bar" ? "barTexture" :
+            "slime";
 
         const sprite = this.add.image(0, 0, key);
 
         const ent = {
             type,
             lane,
-            z: this.SPAWN_Z + zOffset,
-            sprite,
-            resolved: false,
-            nearSize: type === "coin" ? 46 : 70,
-            nearWidth: 110,
-            nearHeight: this.standHeight * 0.18
+            z: this.SPAWN_Z + zOff,
+            sprite
         };
 
-        this.updateEntityVisual(ent);
+        this.updateEntity(ent);
         this.entities.push(ent);
     }
 
@@ -420,21 +388,24 @@ export default class GameScene extends Phaser.Scene {
         if (r < 0.4) this.spawnEntity("bar", lane);
         else if (r < 0.7) this.spawnEntity("slime", lane);
         else this.spawnEntity("coin", lane);
-
-        if (Math.random() < 0.3) {
-            this.spawnEntity("coin", Phaser.Math.Between(0, 2), 12);
-        }
     }
 
+    // =========================
+    // COLLISION
+    // =========================
     resolveEntity(ent, index) {
 
         if (ent.type === "coin") {
+
+            this.coinFX(ent.sprite.x, ent.sprite.y);
+
             ent.sprite.destroy();
             this.entities.splice(index, 1);
 
             this.score += 15;
             this.coinsCollected++;
             this.coinsText.setText("Coins : " + this.coinsCollected);
+
             return;
         }
 
@@ -452,18 +423,17 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.setTint(0xff0000);
 
+        this.hitFX(this.player.x, this.player.y);
+        this.cameras.main.shake(200, 0.01);
+
         this.time.delayedCall(500, () => {
             this.player.clearTint();
             this.invincible = false;
         });
 
         if (this.lives <= 0) {
-            this.showGameOver();
+            this.gameOver = true;
+            this.scene.restart();
         }
-    }
-
-    showGameOver() {
-        this.gameOver = true;
-        this.scene.restart(); // بسيط زي ما عندك
     }
 }
