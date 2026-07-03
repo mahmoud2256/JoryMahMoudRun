@@ -11,15 +11,14 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.background = this.add.tileSprite(
+        this.background = this.add.image(
             width / 2,
-            height / 2,
-            width,
-            height,
+            height / 2,            
             "background"
         );
+        this.background.setDisplaySize(width, height);
         this.background.setDepth(0);
-
+        
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
