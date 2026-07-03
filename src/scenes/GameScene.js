@@ -31,9 +31,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.22;
-        this.nearHalfWidth = width * 0.30;
-        this.farHalfWidth = width * 0.05;
+        this.horizonY = height * 0.35;
+        this.nearHalfWidth = width * 0.42;
+        this.farHalfWidth = width * 0.02;
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
