@@ -11,14 +11,16 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        this.background = this.add.image(
+        // الخلفية كـ tileSprite عشان تتحرك (parallax)
+        this.background = this.add.tileSprite(
             width / 2,
-            height / 2,            
+            height / 2,
+            width,
+            height,
             "background"
         );
-        this.background.setDisplaySize(width, height);
         this.background.setDepth(0);
-        
+
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
@@ -53,11 +55,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.currentLane = 1;
 
-        // =========================
-        // Player - spritesheet animation
-        // =========================
-
-        // Create run animation from spritesheet
         if (!this.anims.exists("run")) {
             this.anims.create({
                 key: "run",
@@ -67,7 +64,6 @@ export default class GameScene extends Phaser.Scene {
             });
         }
 
-        // Use spritesheet if available, otherwise fallback to static image
         const hasAnim = this.textures.exists("playerRunAnim");
 
         this.player = this.add.sprite(
@@ -97,7 +93,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.hasAnim = hasAnim;
 
-        // Start run animation
         if (this.hasAnim) this.player.play("run");
 
         this.isJumping = false;
@@ -333,10 +328,12 @@ export default class GameScene extends Phaser.Scene {
         this.elapsedTime += dt;
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
 
-        this.background.tilePositionY -= this.zSpeed * 4 * dt;
+        // الخلفية بتتحرك ببطء (parallax) - إحساس العمق
+        this.background.tilePositionY -= this.zSpeed * 1.5 * dt;
+
+        // الأرضية بتتحرك أسرع - إحساس الجري على الطريق
         this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
 
-        // Run animation only when standing
         if (!this.isJumping && !this.isDucking) {
             if (this.hasAnim) {
                 if (!this.player.anims.isPlaying) this.player.play("run");
