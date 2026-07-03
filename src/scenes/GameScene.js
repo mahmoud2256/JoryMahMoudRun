@@ -12,13 +12,12 @@ export default class GameScene extends Phaser.Scene {
         const height = this.scale.height;
 
         // الخلفية كـ tileSprite عشان تتحرك (parallax)
-        this.background = this.add.tileSprite(
+        this.background = this.add.image(
             width / 2,
-            height / 2,
-            width,
-            height,
+            height / 2, 
             "background"
         );
+        this.background.setDisplaySize(width, height);
         this.background.setDepth(0);
 
         this.groundY = height - 110;
@@ -327,10 +326,7 @@ export default class GameScene extends Phaser.Scene {
 
         this.elapsedTime += dt;
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
-
-        // الخلفية بتتحرك ببطء (parallax) - إحساس العمق
-        this.background.tilePositionY -= this.zSpeed * 1.5 * dt;
-
+              
         // الأرضية بتتحرك أسرع - إحساس الجري على الطريق
         this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
 
