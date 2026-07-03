@@ -39,9 +39,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.44;
-        this.nearHalfWidth = width * 0.395;
-        this.farHalfWidth = width * 0.185;
+        this.horizonY = height * 0.39;
+        this.nearHalfWidth = width * 0.34;
+        this.farHalfWidth = width * 0.075;
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
@@ -214,7 +214,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     laneXAtDepth(laneIndexFloat, depthT) {
-        const cx = this.scale.width / 2 - 17;
+        const cx = this.scale.width / 2;
         const halfWidth = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * depthT;
         return cx + (laneIndexFloat - 1) * halfWidth;
     }
@@ -382,9 +382,9 @@ export default class GameScene extends Phaser.Scene {
             z: this.SPAWN_Z + zOffset,
             sprite,
             resolved: false,
-            nearSize: type === "coin" ? 46 : 70,
-            nearWidth: 110,
-            nearHeight: this.standHeight * 0.18
+            nearSize: type === "coin" ? 34 : 70,
+            nearWidth: 75,
+            nearHeight: this.standHeight * 0.13
         };
         this.updateEntityVisual(ent);
         this.entities.push(ent);
