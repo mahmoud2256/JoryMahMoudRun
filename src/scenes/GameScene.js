@@ -39,9 +39,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.39;
-        this.nearHalfWidth = width * 0.34;
-        this.farHalfWidth = width * 0.075;
+        this.horizonY = height * 0.20;
+        this.nearHalfWidth = width * 0.26;
+        this.farHalfWidth = width * 0.09;
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
@@ -64,7 +64,7 @@ export default class GameScene extends Phaser.Scene {
             hasAnim ? "playerRunAnim" : "playerRun"
         );
 
-        const targetPlayerHeight = height * 0.16;
+        const targetPlayerHeight = height * 0.13;
         const nativeAspect = hasAnim
             ? (160 / 320)
             : (this.player.width / this.player.height);
@@ -82,7 +82,8 @@ export default class GameScene extends Phaser.Scene {
         this.standHeight = this.player.displayHeight;
         this.baseY = this.groundY - (this.standHeight / 2);
         this.player.y = this.baseY;
-
+        this.player.setOrigin(0.5,1);
+        this.player.y=this.groundY;
         this.hasAnim = hasAnim;
 
         if (this.hasAnim) this.player.play("run");
@@ -195,7 +196,11 @@ export default class GameScene extends Phaser.Scene {
 
         this.spawnTimer = 0;
         this.nextSpawnIn = 1500;
+     this.cameras.main.setZoom(1);
 
+    this.cameras.main.scrollX = 0;
+    this.cameras.main.scrollY = 0;
+    
     }
 
     laneXAtDepth(laneIndexFloat, depthT) {
@@ -215,7 +220,7 @@ export default class GameScene extends Phaser.Scene {
 
     relativeScaleForDepth(depthT) {
         const eased = Math.pow(depthT, 1.6);
-        return 1.0 + (0.12 - 1.0) * eased;
+        return Phaser.Math.Linear(1.0,0.18,depthT);
     }
 
     updateEntityVisual(ent) {
@@ -321,7 +326,7 @@ export default class GameScene extends Phaser.Scene {
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
               
         // الأرضية بتتحرك أسرع - إحساس الجري على الطريق
-        this.groundStrip.tilePositionY -= this.zSpeed * 8 * dt;
+        this.groundStrip.tilePositionY -= this.zSpeed*6*dt;
 
         if (!this.isJumping && !this.isDucking) {
             if (this.hasAnim) {
@@ -368,8 +373,8 @@ export default class GameScene extends Phaser.Scene {
             sprite,
             resolved: false,
             nearSize: type === "coin" ? 34 : 70,
-            nearWidth: 75,
-            nearHeight: this.standHeight * 0.13
+            nearWidth: 70,
+            nearHeight: this.standHeight * 0.12
         };
         this.updateEntityVisual(ent);
         this.entities.push(ent);
