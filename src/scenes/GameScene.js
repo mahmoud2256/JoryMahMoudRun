@@ -55,21 +55,12 @@ export default class GameScene extends Phaser.Scene {
 
         this.currentLane = 1;
 
-        if (!this.anims.exists("run")) {
-            this.anims.create({
-                key: "run",
-                frames: this.anims.generateFrameNumbers("playerRunAnim", { start: 0, end: 5 }),
-                frameRate: 12,
-                repeat: -1
-            });
-        }
+        this.hasAnim = false;
 
-        const hasAnim = this.textures.exists("playerRunAnim");
-
-        this.player = this.add.sprite(
-            this.laneXAtDepth(this.currentLane, 0),
+        this.player = this.add.image(
+            this.laneXAtDepth(this.currentLane,0),
             0,
-            hasAnim ? "playerRunAnim" : "playerRun"
+            "playerRun"
         );
 
         const targetPlayerHeight = height * 0.16;
@@ -381,7 +372,7 @@ export default class GameScene extends Phaser.Scene {
             sprite,
             resolved: false,
             nearSize: type === "coin" ? 46 : 70,
-            nearWidth: 220,
+            nearWidth: 180,
             nearHeight: this.standHeight * 220
         };
         this.updateEntityVisual(ent);

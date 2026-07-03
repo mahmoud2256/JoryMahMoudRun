@@ -8,78 +8,135 @@ export default class MenuScene extends Phaser.Scene {
 
     create() {
 
-        this.cameras.main.setBackgroundColor("#151933");
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        // =========================
+        // Background
+        // =========================
+
+        this.add.image(
+            width / 2,
+            height / 2,
+            "background"
+        ).setDisplaySize(width, height);
+
+        this.add.rectangle(
+            width / 2,
+            height / 2,
+            width,
+            height,
+            0x000000,
+            0.35
+        );
+
+        // =========================
+        // Title
+        // =========================
 
         this.add.text(
-            this.scale.width / 2,
-            140,
+            width / 2,
+            height * 0.15,
             "JORY MAHMOUD RUN",
             {
                 fontFamily: "Arial",
-                fontSize: "30px",
+                fontSize: "48px",
                 fontStyle: "bold",
                 color: "#ffffff",
-                align: "center",
-                wordWrap: { width: this.scale.width - 40 }
+                stroke: "#000000",
+                strokeThickness: 6,
+                align: "center"
             }
         ).setOrigin(0.5);
 
+        // =========================
+        // Developer
+        // =========================
+
         this.add.text(
-            this.scale.width / 2,
-            210,
-            "Made with ❤️ by Mahmoud Amin",
+            width / 2,
+            height * 0.24,
+            "Made By Mahmoud Amin",
             {
-                fontFamily: "Arial",
-                fontSize: "20px",
-                color: "#FFD54F",
-                align: "center",
-                wordWrap: { width: this.scale.width - 40 }
+                fontSize: "22px",
+                color: "#FFD54F"
             }
         ).setOrigin(0.5);
 
-        this.add.text(
-            this.scale.width / 2,
-            280,
-            "Collect Coins • Avoid Slimes • Reach The Finish",
-            {
-                fontFamily: "Arial",
-                fontSize: "16px",
-                color: "#DDDDDD",
-                align: "center",
-                wordWrap: { width: this.scale.width - 40 }
-            }
-        ).setOrigin(0.5);
+        // =========================
+        // Play Button
+        // =========================
 
         const playButton = this.add.text(
-            this.scale.width / 2,
-            390,
-            "▶ PLAY",
+            width / 2,
+            height * 0.55,
+            "PLAY",
             {
-                fontFamily: "Arial",
-                fontSize: "34px",
+                fontSize: "42px",
                 fontStyle: "bold",
                 backgroundColor: "#00C853",
                 color: "#ffffff",
-                padding: { left: 30, right: 30, top: 15, bottom: 15 }
+                padding: {
+                    left: 45,
+                    right: 45,
+                    top: 20,
+                    bottom: 20
+                }
             }
         ).setOrigin(0.5);
 
         playButton.setInteractive({ useHandCursor: true });
 
-        playButton.on("pointerover", () => { playButton.setScale(1.08); });
-        playButton.on("pointerout", () => { playButton.setScale(1); });
-        playButton.on("pointerdown", () => { this.scene.start("GameScene"); });
+        playButton.on("pointerover", () => {
+            playButton.setScale(1.08);
+        });
+
+        playButton.on("pointerout", () => {
+            playButton.setScale(1);
+        });
+
+        playButton.on("pointerdown", () => {
+
+            this.cameras.main.fadeOut(250);
+
+            this.time.delayedCall(250, () => {
+
+                this.scene.start("GameScene");
+
+            });
+
+        });
+
+        // =========================
+        // Instructions
+        // =========================
 
         this.add.text(
-            this.scale.width / 2,
-            560,
-            "Version 1.0",
+            width / 2,
+            height * 0.73,
+            "Swipe Left / Right\nSwipe Up To Jump\nSwipe Down To Slide",
             {
-                fontFamily: "Arial",
-                fontSize: "16px",
-                color: "#888888"
+                fontSize: "20px",
+                color: "#FFFFFF",
+                align: "center"
             }
         ).setOrigin(0.5);
+
+        // =========================
+        // Version
+        // =========================
+
+        this.add.text(
+            width / 2,
+            height - 35,
+            "Version 2.0",
+            {
+                fontSize: "16px",
+                color: "#CCCCCC"
+            }
+        ).setOrigin(0.5);
+
+        this.cameras.main.fadeIn(250);
 
     }
 
