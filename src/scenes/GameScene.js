@@ -102,7 +102,8 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.setDisplaySize(targetH * aspect, targetH);
         this.player.setDepth(50);
-
+        this.player.setOrigin(0.5, 1);
+        this.player.setScale(this.player.scaleX);
         this.baseY = this.groundY - this.player.displayHeight / 2;
         this.player.y = this.baseY;
 
@@ -223,7 +224,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     scaleFor(t) {
-        return 0.6 + (1 - t) * 0.6;
+        return 0.5 + (1 - t) * 0.4;
     }
 
     updateEntity(ent) {
@@ -326,6 +327,7 @@ export default class GameScene extends Phaser.Scene {
     // CAMERA STABILITY (FIX IMPORTANT)
     // =========================
     this.cameras.main.setZoom(this.zSpeed > 45 ? 1.06 : 1.04);
+    this.cameras.main.startFollow(this.player, false, 0.08, 0.08);
 
     // ❌ IMPORTANT FIX: REMOVE BOBBING THAT BREAKS JUMP
     
