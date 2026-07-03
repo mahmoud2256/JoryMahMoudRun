@@ -45,21 +45,6 @@ export default class GameScene extends Phaser.Scene {
         this.SPAWN_Z = 60;
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
-
-        this.laneGraphics = this.add.graphics();
-        this.laneGraphics.setDepth(2);
-        this.laneGraphics.lineStyle(2, 0xffffff, 0.25);
-
-        const nearY = this.groundY;
-        [-0.5, 0.5, 1.5, 2.5].forEach((boundary) => {
-            const nearX = this.laneXAtDepth(boundary, 0);
-            const farX = this.laneXAtDepth(boundary, 1);
-            this.laneGraphics.beginPath();
-            this.laneGraphics.moveTo(nearX, nearY);
-            this.laneGraphics.lineTo(farX, this.horizonY);
-            this.laneGraphics.strokePath();
-        });
-
         this.currentLane = 1;
 
         if (!this.anims.exists("run")) {
