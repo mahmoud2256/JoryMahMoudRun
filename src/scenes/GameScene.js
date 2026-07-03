@@ -214,8 +214,12 @@ export default class GameScene extends Phaser.Scene {
     }
 
     screenYForDepth(depthT) {
-        // يبدأ من نقطة اختفاء الطريق
-        const startY = this.horizonY + 18;
+        // depthT = 1 بعيد
+        // depthT = 0 قريب
+        const t = 1 - depthT;
+        const curve = t * t * t;
+        return Phaser.Math.Linear(this.horizonY,this.baseY,curve);
+    }    
 
         // ينزل تدريجياً على مستوى الأسفلت
         const endY = this.baseY;
@@ -226,28 +230,47 @@ export default class GameScene extends Phaser.Scene {
 
     relativeScaleForDepth(depthT) {
         const t = 1 - depthT;
-            return 0.08 + (t * t * 0.92);
+            return Phaser.Math.Linear(0.05,1,t);
     }
 
     updateEntityVisual(ent) {
+
         const depthT = this.depthTForZ(ent.z);
-        const x = this.laneXAtDepth(ent.lane, depthT);
-        const y = Phaser.Math.Linear(this.horizonY,this.baseY,1 - depthT);
-        const scale = Phaser.Math.Linear(0.05,1,1 - depthT);
-        ent.sprite.setPosition(x, y);
-        ent.sprite.setScale(scale);
-        ent.sprite.setDepth(20 + scale * 100);
-        }
-        if (ent.type === "ground") {
-            const size = ent.nearSize * rel;
+
+        const scale = this.relativeScaleForDepth(depthT);
+
+            ent.sprite.x = this.laneXAtDepth(ent.lane, depthT);
+
+            ent.sprite.y = this.screenYForDepth(depthT);
+
+            ent.sprite.setDepth(scale * 100);
+
+    if (ent.type === "coin") {
+
+        const size = ent.nearSize * scale;
+
             ent.sprite.setDisplaySize(size, size);
-        } else if (ent.type === "coin") {
-            const size = ent.nearSize * rel;
-            ent.sprite.setDisplaySize(size, size);
-        } else if (ent.type === "bar") {
-            ent.sprite.setDisplaySize(ent.nearWidth * rel, ent.nearHeight * rel);
-        }
+
     }
+
+    else if (ent.type === "ground") {
+
+        const size = ent.nearSize * scale;
+
+        ent.sprite.setDisplaySize(size, size);
+
+    }
+
+    else {
+
+        ent.sprite.setDisplaySize(
+            ent.nearWidth * scale,
+            ent.nearHeight * scale
+        );
+
+    }
+
+}
 
     changeLane(direction) {
         const newLane = this.currentLane + direction;
