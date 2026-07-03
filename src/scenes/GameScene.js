@@ -12,13 +12,16 @@ export default class GameScene extends Phaser.Scene {
         const height = this.scale.height;
 
         // ===== الخلفية =====
-        this.background = this.add.tileSprite(
+        this.background = this.add.image(
             width / 2,
             height / 2,
-            width,
-            height,
             "background"
+
         );
+
+
+        this.background.setDisplaySize(width, height);
+        this.background.setScrollFactor(0);
         this.background.setDepth(0);
 
         // ===== الأرض =====
