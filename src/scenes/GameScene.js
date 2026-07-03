@@ -6,11 +6,16 @@ export default class GameScene extends Phaser.Scene {
     }
 
     create() {
+
         // ===== المقاسات =====
         this.width = this.scale.width;
         this.height = this.scale.height;
 
-        // ===== الخلفية (ثابتة وتغطي الشاشة) =====
+        // ===== كاميرا Runner =====
+        this.cameras.main.setBounds(0, 0, 999999, this.height);
+        this.physics.world.setBounds(0, 0, 999999, this.height);
+
+        // ===== خلفية ثابتة (مش بتتحرك) =====
         this.background = this.add.image(
             this.width / 2,
             this.height / 2,
@@ -18,22 +23,26 @@ export default class GameScene extends Phaser.Scene {
         );
 
         this.background.setDisplaySize(this.width, this.height);
-        this.background.setDepth(0);
+        this.background.setScrollFactor(0);
 
-        // ===== الأرض =====
+        // ===== أرض =====
         this.groundY = this.height - 120;
 
         // ===== اللاعب =====
-        this.player = this.physics.add.sprite(120, this.groundY, "player");
+        this.player = this.physics.add.sprite(150, this.groundY, "player");
         this.player.setCollideWorldBounds(true);
-        this.player.setGravityY(900);
-        this.player.setScale(1);
+        this.player.setGravityY(1000);
+
+        // الكاميرا تتبع اللاعب
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.cameras.main.setZoom(1);
 
         // ===== الحواجز =====
         this.obstacles = this.physics.add.group();
 
-        this.spawnTimer = this.time.addEvent({
-            delay: 1500,
+        // spawn
+        this.time.addEvent({
+            delay: 1400,
             loop: true,
             callback: this.spawnObstacle,
             callbackScope: this
@@ -48,41 +57,47 @@ export default class GameScene extends Phaser.Scene {
             this
         );
 
-        // ===== التحكم باللمس =====
+        // ===== تحكم =====
         this.input.on("pointerdown", () => {
             this.jump();
         });
 
-        // ===== كيبورد =====
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // ===== سرعة اللعبة =====
-        this.gameSpeed = 260;
+        this.gameSpeed = 350;
+        this.distance = 0;
     }
 
     update() {
-        // قفز بالكيبورد
+
+        // قفز
         if (this.cursors.space.isDown || this.cursors.up.isDown) {
             this.jump();
         }
 
-        // حذف الحواجز اللي خرجت برا الشاشة
+        // مسافة (اختياري للـ score بعدين)
+        this.distance += 1;
+
+        // تنظيف الحواجز
         this.obstacles.getChildren().forEach((obstacle) => {
-            if (obstacle.x < -50) {
+            if (obstacle.x < this.player.x - 800) {
                 obstacle.destroy();
             }
         });
     }
 
     jump() {
-        if (this.player.body.touching.down) {
+        if (this.player.body.blocked.down) {
             this.player.setVelocityY(-520);
         }
     }
 
     spawnObstacle() {
+
+        const spawnX = this.player.x + 900;
+
         const obstacle = this.obstacles.create(
-            this.width + 50,
+            spawnX,
             this.groundY,
             "obstacle"
         );
@@ -90,14 +105,10 @@ export default class GameScene extends Phaser.Scene {
         obstacle.setVelocityX(-this.gameSpeed);
         obstacle.setImmovable(true);
         obstacle.setGravityY(0);
-        obstacle.setScale(1);
-
-        // ارتفاع بسيط لو عايز تنويع
-        obstacle.y = this.groundY;
     }
 
     hitObstacle() {
-        // إعادة تشغيل بسيطة عند الاصطدام
+
         this.physics.pause();
         this.player.setTint(0xff0000);
 
