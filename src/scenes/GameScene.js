@@ -39,9 +39,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        this.horizonY = height * 0.48;
+        this.horizonY = height * 0.50;
         this.nearHalfWidth = width * 0.28;
-        this.farHalfWidth = width * 0.015;
+        this.farHalfWidth = width * 0.005;
         this.SPAWN_Z = 140;
         this.HIT_Z = 8;
         this.CLEANUP_Z = -6;
@@ -210,20 +210,23 @@ export default class GameScene extends Phaser.Scene {
     }
 
     depthTForZ(z) {
-        return Phaser.Math.Clamp(z / this.SPAWN_Z, 0, 1);
+        return Phaser.Math.Clamp((z - this.CLEANUP_Z) /(this.SPAWN_Z - this.CLEANUP_Z),0,1);
     }
 
     screenYForDepth(depthT) {
-        // يبدأ من آخر الطريق ويقترب منك
-        return Phaser.Math.Linear(
-            this.horizonY,
-            this.baseY,
-            1 - depthT
-            );
+        // يبدأ من نقطة اختفاء الطريق
+        const startY = this.horizonY + 18;
+
+        // ينزل تدريجياً على مستوى الأسفلت
+        const endY = this.baseY;
+        const endY = this.baseY;
+        const curve = t * t * t;
+            return Phaser.Math.Linear(startY, endY, curve);
     }
 
     relativeScaleForDepth(depthT) {
-        return Phaser.Math.Linear(0.12,1,1 - depthT);
+        const t = 1 - depthT;
+            return 0.08 + (t * t * 0.92);
     }
 
     updateEntityVisual(ent) {
@@ -374,7 +377,7 @@ export default class GameScene extends Phaser.Scene {
         else if (type === "bar") sprite = this.add.image(0, 0, "barTexture");
         const ent = {
             type, lane,
-            z: this.SPAWN_Z + zOffset,
+            z: this.SPAWN_Z + 30 + zOffset,
             sprite,
             resolved: false,
             nearSize: type === "coin" ? 34 : 70,
