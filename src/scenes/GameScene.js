@@ -11,18 +11,19 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // ===== الخلفية (ثابتة Full Screen) =====
+        // ================= BACKGROUND =================
         this.background = this.add.image(
             width / 2,
             height / 2,
             "background"
         );
 
-        this.background.setDisplaySize(width, height);
+        this.background.setDisplayWidth(width);
+        this.background.setDisplayHeight(height);
         this.background.setScrollFactor(0);
         this.background.setDepth(0);
 
-        // ===== الأرض =====
+        // ================= GROUND =================
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
@@ -34,7 +35,9 @@ export default class GameScene extends Phaser.Scene {
         );
         this.groundStrip.setDepth(1);
 
-        // ===== منظور lanes =====
+        // ================= LANES SYSTEM =================
+        this.currentLane = 1;
+
         this.horizonY = height * 0.35;
         this.nearHalfWidth = width * 0.42;
         this.farHalfWidth = width * 0.02;
@@ -43,119 +46,80 @@ export default class GameScene extends Phaser.Scene {
         this.HIT_Z = 4;
         this.CLEANUP_Z = -6;
 
-        // ===== اللاعب =====
-        this.currentLane = 1;
-
+        // ================= PLAYER =================
         this.player = this.add.sprite(
-            this.laneXAtDepth(this.currentLane, 0),
+            this.laneX(this.currentLane),
             this.groundY,
             "playerRun"
         );
 
-        const targetHeight = height * 0.16;
+        const targetH = height * 0.16;
         const aspect = this.player.width / this.player.height;
 
-        this.player.setDisplaySize(targetHeight * aspect, targetHeight);
+        this.player.setDisplaySize(targetH * aspect, targetH);
         this.player.setDepth(50);
 
         this.baseY = this.groundY - (this.player.displayHeight / 2);
         this.player.y = this.baseY;
 
-        // ===== states =====
         this.isJumping = false;
-        this.isDucking = false;
         this.gameOver = false;
 
-        // ===== entities =====
+        // ================= ENTITIES =================
         this.entities = [];
 
-        // ===== speed =====
+        // ================= SPEED =================
+        this.zSpeed = 16;
         this.zBaseSpeed = 16;
         this.zMaxSpeed = 55;
-        this.zSpeed = this.zBaseSpeed;
-        this.elapsedTime = 0;
+        this.timeAlive = 0;
 
-        // ===== score =====
+        // ================= SCORE + COINS =================
         this.score = 0;
+        this.coins = 0;
 
         this.scoreText = this.add.text(20, 20, "Score: 0", {
             fontSize: "26px",
-            color: "#ffffff",
-            stroke: "#000000",
+            color: "#fff",
+            stroke: "#000",
             strokeThickness: 4
         }).setDepth(100);
 
-        // ===== controls =====
+        this.coinsText = this.add.text(20, 55, "Coins: 0", {
+            fontSize: "24px",
+            color: "#ffd54f",
+            stroke: "#000",
+            strokeThickness: 4
+        }).setDepth(100);
+
+        // ================= INPUT =================
         this.cursors = this.input.keyboard.createCursorKeys();
 
         this.input.on("pointerdown", () => {
-            if (!this.gameOver) this.tryJump();
+            if (!this.gameOver) this.jump();
         });
 
+        // ================= SPAWN =================
         this.spawnTimer = 0;
-        this.nextSpawnIn = 1200;
+        this.nextSpawn = 1200;
     }
 
-    // ===== lane system =====
-    laneXAtDepth(laneIndex, depthT) {
+    // ================= LANES =================
+    laneX(lane) {
         const cx = this.scale.width / 2;
-        const halfWidth =
-            this.nearHalfWidth +
-            (this.farHalfWidth - this.nearHalfWidth) * depthT;
-
-        return cx + (laneIndex - 1) * halfWidth;
+        const half = this.nearHalfWidth;
+        return cx + (lane - 1) * half;
     }
 
-    depthT(z) {
-        return Phaser.Math.Clamp(z / this.SPAWN_Z, 0, 1);
-    }
-
-    screenY(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return this.baseY + (this.horizonY - this.baseY) * eased;
-    }
-
-    scaleByDepth(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return 1 + (0.12 - 1) * eased;
-    }
-
-    // ===== FIXED entity rendering =====
-    updateEntity(ent) {
-
-        const t = this.depthT(ent.z);
-        const x = this.laneXAtDepth(ent.lane, t);
-        const y = this.screenY(t);
-        const s = this.scaleByDepth(t);
-
-        ent.sprite.x = x;
-        ent.sprite.y = y;
-        ent.sprite.setDepth(10 + (1 - t) * 20);
-
-        if (ent.type === "coin") {
-            const size = ent.size * s;
-            ent.sprite.setDisplaySize(size, size);
-        }
-
-        if (ent.type === "bar") {
-            ent.sprite.setDisplaySize(ent.w * s, ent.h * s);
-        }
-
-        if (ent.type === "ground") {
-            const size = ent.size * s;
-            ent.sprite.setDisplaySize(size, size);
-        }
-    }
-
-    // ===== jump =====
-    tryJump() {
+    // ================= JUMP =================
+    jump() {
         if (this.isJumping) return;
 
         this.isJumping = true;
 
         this.tweens.add({
             targets: this.player,
-            y: this.baseY - 120,
+            y: this.baseY - 140,
             duration: 250,
             ease: "Sine.easeOut",
             yoyo: true,
@@ -166,27 +130,27 @@ export default class GameScene extends Phaser.Scene {
         });
     }
 
-    // ===== spawn =====
-    spawnEntity(type, lane, zOffset = 0) {
+    // ================= SPAWN =================
+    spawnEntity(type, lane) {
 
         let sprite;
 
         if (type === "bar") {
-            sprite = this.add.rectangle(0, 0, 120, 40, 0xff4444);
+            sprite = this.add.image(0, 0, "barTexture");
         }
 
-        else if (type === "ground") {
-            sprite = this.add.rectangle(0, 0, 70, 70, 0x00ff00);
+        else if (type === "coin") {
+            sprite = this.add.image(0, 0, "coin");
         }
 
         else {
-            sprite = this.add.circle(0, 0, 18, 0xffff00);
+            sprite = this.add.image(0, 0, "ground");
         }
 
         const ent = {
             type,
             lane,
-            z: this.SPAWN_Z + zOffset,
+            z: this.SPAWN_Z,
             sprite,
             size: 50,
             w: 120,
@@ -202,51 +166,76 @@ export default class GameScene extends Phaser.Scene {
         const lane = Phaser.Math.Between(0, 2);
         const r = Math.random();
 
-        if (r < 0.4) {
+        if (r < 0.45) {
             this.spawnEntity("bar", lane);
         }
         else if (r < 0.7) {
             this.spawnEntity("ground", lane);
         }
         else {
-            for (let i = 0; i < 3; i++) {
-                this.spawnEntity("coin", lane, i * 6);
-            }
+            this.spawnEntity("coin", lane);
         }
     }
 
-    // ===== update loop =====
+    // ================= ENTITY UPDATE =================
+    updateEntity(ent) {
+
+        const t = Phaser.Math.Clamp(ent.z / this.SPAWN_Z, 0, 1);
+
+        const x = this.laneX(ent.lane);
+        const y = this.baseY + (this.horizonY - this.baseY) * Math.pow(t, 1.6);
+
+        ent.sprite.x = x;
+        ent.sprite.y = y;
+
+        ent.sprite.setDepth(10 + (1 - t) * 20);
+
+        const scale = 1 + (0.12 - 1) * Math.pow(t, 1.6);
+
+        if (ent.type === "coin") {
+            ent.sprite.setDisplaySize(ent.size * scale, ent.size * scale);
+        }
+
+        if (ent.type === "bar") {
+            ent.sprite.setDisplaySize(ent.w * scale, ent.h * scale);
+        }
+
+        if (ent.type === "ground") {
+            ent.sprite.setDisplaySize(ent.size * scale, ent.size * scale);
+        }
+    }
+
+    // ================= UPDATE LOOP =================
     update(time, delta) {
 
         if (this.gameOver) return;
 
         const dt = delta / 1000;
 
-        // speed
-        this.elapsedTime += dt;
+        // speed increase
+        this.timeAlive += dt;
         this.zSpeed = Math.min(
             this.zMaxSpeed,
-            this.zBaseSpeed + this.elapsedTime * 0.4
+            this.zBaseSpeed + this.timeAlive * 0.4
         );
 
-        // background fixed (NO movement)
+        // background FIXED
         this.background.setScrollFactor(0);
 
-        // ground movement (optional feel)
+        // ground movement
         this.groundStrip.tilePositionY -= this.zSpeed * dt * 6;
 
         // controls
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.currentLane = Math.max(0, this.currentLane - 1);
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.currentLane = Math.min(2, this.currentLane + 1);
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.jump();
+
+        this.player.x = this.laneX(this.currentLane);
+        this.player.y = this.baseY;
 
         // score
         this.score += dt * 10;
         this.scoreText.setText("Score: " + Math.floor(this.score));
-
-        // FIX PLAYER POSITION
-        this.player.x = this.laneXAtDepth(this.currentLane, 0);
-        this.player.y = this.baseY;
 
         // entities update
         for (let i = this.entities.length - 1; i >= 0; i--) {
@@ -259,15 +248,21 @@ export default class GameScene extends Phaser.Scene {
 
             // collision
             if (!ent.hit && ent.lane === this.currentLane && ent.z <= this.HIT_Z) {
+
                 ent.hit = true;
 
                 if (ent.type === "coin") {
+
+                    this.coins++;
+                    this.coinsText.setText("Coins: " + this.coins);
+
                     ent.sprite.destroy();
                     this.entities.splice(i, 1);
                     this.score += 20;
                     continue;
                 }
 
+                // hit obstacle
                 this.scene.restart();
                 return;
             }
@@ -282,16 +277,10 @@ export default class GameScene extends Phaser.Scene {
         // spawn
         this.spawnTimer += delta;
 
-        if (this.spawnTimer > this.nextSpawnIn) {
+        if (this.spawnTimer > this.nextSpawn) {
             this.spawnTimer = 0;
-            this.nextSpawnIn = Phaser.Math.Between(900, 1400);
+            this.nextSpawn = Phaser.Math.Between(900, 1400);
             this.spawnWave();
         }
-    }
-
-    changeLane(dir) {
-        const newLane = this.currentLane + dir;
-        if (newLane < 0 || newLane > 2) return;
-        this.currentLane = newLane;
     }
 }
