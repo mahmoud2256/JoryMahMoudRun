@@ -11,16 +11,6 @@ export default class GameScene extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // =========================
-        // CAMERA FIX (ADDED)
-        // =========================
-        this.cameras.main.setZoom(1);
-        this.cameras.main.setScroll(0, 0);
-        this.cameras.main.setRoundPixels(true);
-
-        // =========================
-        // BACKGROUND
-        // =========================
         this.background = this.add.tileSprite(
             width / 2,
             height / 2,
@@ -30,11 +20,7 @@ export default class GameScene extends Phaser.Scene {
         );
 
         this.background.setDepth(0);
-        this.background.setScrollFactor(0); // FIX
 
-        // =========================
-        // GROUND
-        // =========================
         this.groundY = height - 110;
 
         this.groundStrip = this.add.tileSprite(
@@ -46,11 +32,7 @@ export default class GameScene extends Phaser.Scene {
         );
 
         this.groundStrip.setDepth(1);
-        this.groundStrip.setScrollFactor(0); // FIX
 
-        // =========================
-        // PERSPECTIVE SYSTEM
-        // =========================
         this.horizonY = height * 0.22;
         this.nearHalfWidth = width * 0.30;
         this.farHalfWidth = width * 0.05;
@@ -75,9 +57,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.currentLane = 1;
 
-        // =========================
-        // PLAYER
-        // =========================
         this.player = this.add.sprite(
             this.laneXAtDepth(this.currentLane, 0),
             0,
@@ -175,10 +154,8 @@ export default class GameScene extends Phaser.Scene {
             if (!pointer.isDown) return;
             if (this.duckHoldActive) return;
             if (this.isJumping) return;
-
             const deltaX = pointer.x - this.pointerStartX;
             const deltaY = pointer.y - this.pointerStartY;
-
             if (deltaY > SWIPE_THRESHOLD && Math.abs(deltaY) > Math.abs(deltaX)) {
                 this.duckHoldActive = true;
                 this.beginDuck();
@@ -191,11 +168,9 @@ export default class GameScene extends Phaser.Scene {
                 this.duckHoldActive = false;
                 return;
             }
-
             const deltaX = pointer.x - this.pointerStartX;
             const deltaY = pointer.y - this.pointerStartY;
             const deltaTime = this.time.now - this.pointerStartTime;
-
             if (deltaTime <= SWIPE_MAX_TIME) {
                 if (Math.abs(deltaX) > Math.abs(deltaY)) {
                     if (deltaX > SWIPE_THRESHOLD) this.changeLane(1);
@@ -209,11 +184,8 @@ export default class GameScene extends Phaser.Scene {
 
         this.spawnTimer = 0;
         this.nextSpawnIn = 1500;
-    }
 
-    // =========================
-    // باقي الكود زي ما هو بدون حذف
-    // =========================
+    }
 
     laneXAtDepth(laneIndexFloat, depthT) {
         const cx = this.scale.width / 2;
@@ -242,7 +214,6 @@ export default class GameScene extends Phaser.Scene {
         const rel = this.relativeScaleForDepth(depthT);
         ent.sprite.setPosition(screenX, screenY);
         ent.sprite.setDepth(10 + (1 - depthT) * 20);
-
         if (ent.type === "ground") {
             const size = ent.nearSize * rel;
             ent.sprite.setDisplaySize(size, size);
@@ -258,9 +229,7 @@ export default class GameScene extends Phaser.Scene {
         const newLane = this.currentLane + direction;
         if (newLane < 0 || newLane > 2) return;
         if (this.isDucking) return;
-
         this.currentLane = newLane;
-
         this.tweens.add({
             targets: this.player,
             x: this.laneXAtDepth(this.currentLane, 0),
@@ -271,13 +240,10 @@ export default class GameScene extends Phaser.Scene {
 
     tryJump() {
         if (this.isJumping || this.isDucking) return;
-
         this.isJumping = true;
-
         this.player.setTexture("playerJump");
-
+        if (this.cache.audio.exists("jump")) this.sound.play("jump");
         const jumpHeight = this.standHeight * 1.55;
-
         this.tweens.add({
             targets: this.player,
             y: this.baseY - jumpHeight,
@@ -294,10 +260,8 @@ export default class GameScene extends Phaser.Scene {
 
     beginDuck() {
         if (this.isJumping || this.isDucking) return;
-
         this.isDucking = true;
         this.player.setTexture("playerIdle");
-
         this.tweens.add({
             targets: this.player,
             scaleY: this.baseScaleY * this.duckScaleFactor,
@@ -309,10 +273,8 @@ export default class GameScene extends Phaser.Scene {
 
     endDuck() {
         if (!this.isDucking) return;
-
         this.isDucking = false;
         this.player.setTexture("playerRun");
-
         this.tweens.add({
             targets: this.player,
             scaleY: this.baseScaleY,
@@ -325,10 +287,11 @@ export default class GameScene extends Phaser.Scene {
     quickDuck() {
         if (this.isJumping || this.isDucking) return;
         this.beginDuck();
-        this.time.delayedCall(550, () => this.endDuck());
+        this.time.delayedCall(550, () => { this.endDuck(); });
     }
 
     update(time, delta) {
+
         if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) this.tryJump();
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
@@ -352,12 +315,10 @@ export default class GameScene extends Phaser.Scene {
             const ent = this.entities[i];
             ent.z -= this.zSpeed * dt;
             this.updateEntityVisual(ent);
-
             if (!ent.resolved && ent.lane === this.currentLane && ent.z <= this.HIT_Z) {
                 ent.resolved = true;
                 this.resolveEntity(ent, i);
             }
-
             if (ent.z <= this.CLEANUP_Z) {
                 if (ent.sprite && ent.sprite.active) ent.sprite.destroy();
                 this.entities.splice(i, 1);
@@ -370,6 +331,7 @@ export default class GameScene extends Phaser.Scene {
             this.nextSpawnIn = Phaser.Math.Between(1100, 1700) * (this.zBaseSpeed / this.zSpeed);
             this.spawnWave();
         }
+
     }
 
     spawnEntity(type, lane, zOffset) {
@@ -377,10 +339,8 @@ export default class GameScene extends Phaser.Scene {
         if (type === "ground") sprite = this.add.image(0, 0, "slime");
         else if (type === "coin") sprite = this.add.image(0, 0, "coin");
         else if (type === "bar") sprite = this.add.image(0, 0, "barTexture");
-
         const ent = {
-            type,
-            lane,
+            type, lane,
             z: this.SPAWN_Z + zOffset,
             sprite,
             resolved: false,
@@ -388,15 +348,14 @@ export default class GameScene extends Phaser.Scene {
             nearWidth: 110,
             nearHeight: this.standHeight * 0.18
         };
-
         this.updateEntityVisual(ent);
         this.entities.push(ent);
+        return ent;
     }
 
     spawnWave() {
         const roll = Math.random();
         const lane = Phaser.Math.Between(0, 2);
-
         if (roll < 0.35) {
             this.spawnEntity("ground", lane, 0);
         } else if (roll < 0.65) {
@@ -404,7 +363,6 @@ export default class GameScene extends Phaser.Scene {
         } else {
             for (let i = 0; i < 4; i++) this.spawnEntity("coin", lane, i * 5);
         }
-
         if (Math.random() < 0.3) {
             const bonusLane = Phaser.Math.Between(0, 2);
             this.spawnEntity("coin", bonusLane, 12);
@@ -415,25 +373,27 @@ export default class GameScene extends Phaser.Scene {
         if (ent.type === "coin") {
             ent.sprite.destroy();
             this.entities.splice(index, 1);
+            if (this.cache.audio.exists("coinSound")) this.sound.play("coinSound");
             this.score += 15;
             this.coinsCollected++;
             this.coinsText.setText("Coins : " + this.coinsCollected);
             return;
         }
-
         if (ent.type === "ground" && this.isJumping) return;
         if (ent.type === "bar" && this.isDucking) return;
-
         this.applyHit();
     }
 
     applyHit() {
+
         if (this.invincible) return;
 
         this.lives--;
+
         this.lifeText.setText("Lives : " + this.lives);
 
         this.invincible = true;
+
         this.player.setTint(0xff0000);
 
         this.time.delayedCall(500, () => {
@@ -442,22 +402,108 @@ export default class GameScene extends Phaser.Scene {
         });
 
         if (this.lives <= 0) {
+
+            if (this.cache.audio.exists("gameOver")) {
+                this.sound.play("gameOver");
+            }
+
             this.showGameOver();
+
         }
+
     }
 
     showGameOver() {
+
         const width = this.scale.width;
         const height = this.scale.height;
 
+        this.physics.pause();
+        this.input.enabled = true;
         const overlay = this.add.rectangle(
-            width / 2,
-            height / 2,
-            width,
-            height,
-            0x000000,
-            0.75
+            width / 2, height / 2,
+            width, height,
+            0x000000, 0.75
         );
         overlay.setDepth(200);
+        overlay.setScrollFactor(0);
+
+        this.add.text(
+            width / 2,
+            height * 0.32,
+            "GAME OVER",
+            {
+                fontSize: "48px",
+                fontStyle: "bold",
+                color: "#ff3333",
+                stroke: "#000000",
+                strokeThickness: 6
+            }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        this.add.text(
+            width / 2,
+            height * 0.45,
+            "Score : " + Math.floor(this.score),
+            {
+                fontSize: "28px",
+                color: "#ffffff",
+                stroke: "#000000",
+                strokeThickness: 4
+            }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        this.add.text(
+            width / 2,
+            height * 0.53,
+            "Coins : " + this.coinsCollected,
+            {
+                fontSize: "24px",
+                color: "#ffd54f",
+                stroke: "#000000",
+                strokeThickness: 3
+            }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        const retryBtn = this.add.text(
+            width / 2,
+            height * 0.68,
+            "▶  ☺ مفيش امل",
+            {
+                fontSize: "30px",
+                fontStyle: "bold",
+                backgroundColor: "#00C853",
+                color: "#ffffff",
+                padding: { left: 28, right: 28, top: 14, bottom: 14 }
+            }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        retryBtn.setInteractive();
+
+        retryBtn.on("pointerdown", () => {
+            this.scene.resume();
+            this.scene.restart();
+        });
+
+        const menuBtn = this.add.text(
+            width / 2,
+            height * 0.80,
+            "تفتكر هاتفرق",
+            {
+                fontSize: "22px",
+                color: "#cccccc",
+                stroke: "#000000",
+                strokeThickness: 3
+            }
+        ).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+
+        menuBtn.setInteractive();
+
+        menuBtn.on("pointerdown", () => {
+            this.scene.resume();
+            this.scene.start("MenuScene");
+        });
+
     }
+
 }
