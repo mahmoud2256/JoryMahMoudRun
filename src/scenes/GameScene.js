@@ -17,7 +17,15 @@ export default class GameScene extends Phaser.Scene {
             height / 2, 
             "background"
         );
-        this.background.setDisplaySize(width, height);
+        const bg = this.textures.get("background").getSourceImage();
+
+        const scale = Math.max(
+            width / bg.width,
+            height / bg.height
+        );
+
+        this.background.setScale(scale);
+        this.background.setOrigin(0.5);
         this.background.setDepth(0);
 
         this.groundY = height - 110;
