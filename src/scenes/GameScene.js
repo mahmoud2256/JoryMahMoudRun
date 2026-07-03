@@ -42,8 +42,8 @@ export default class GameScene extends Phaser.Scene {
         this.horizonY = height * 0.20;
         this.nearHalfWidth = width * 0.26;
         this.farHalfWidth = width * 0.09;
-        this.SPAWN_Z = 60;
-        this.HIT_Z = 4;
+        this.SPAWN_Z = 90;
+        this.HIT_Z = 8;
         this.CLEANUP_Z = -6;
         this.currentLane = 1;
 
@@ -200,13 +200,13 @@ export default class GameScene extends Phaser.Scene {
 
     this.cameras.main.scrollX = 0;
     this.cameras.main.scrollY = 0;
-    
+
     }
 
-    laneXAtDepth(laneIndexFloat, depthT) {
-        const cx = this.scale.width / 2;
+    laneXAtDepth(lane, depthT) {
+        const center = this.scale.width / 2;
         const halfWidth = this.nearHalfWidth + (this.farHalfWidth - this.nearHalfWidth) * depthT;
-        return cx + (laneIndexFloat - 1) * halfWidth;
+        return center + (lane - 1) * roadWidth;
     }
 
     depthTForZ(z) {
@@ -214,13 +214,15 @@ export default class GameScene extends Phaser.Scene {
     }
 
     screenYForDepth(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return this.baseY + (this.horizonY - this.baseY) * eased;
+        // يبدأ من آخر الطريق ويقترب منك
+        return Phaser.Math.Linear(
+            this.horizonY,
+            this.baseY,
+            1 - depthT
     }
 
     relativeScaleForDepth(depthT) {
-        const eased = Math.pow(depthT, 1.6);
-        return Phaser.Math.Linear(1.0,0.18,depthT);
+        return Phaser.Math.Linear(0.12,1,1 - depthT);
     }
 
     updateEntityVisual(ent) {
