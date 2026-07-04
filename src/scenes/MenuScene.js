@@ -70,16 +70,55 @@ export default class MenuScene extends Phaser.Scene {
         playButton.on("pointerout", () => { playButton.setScale(1); });
         playButton.on("pointerdown", () => { this.scene.start("GameScene"); });
 
-        this.add.text(
-            this.scale.width / 2,
-            560,
-            "Version 1.0",
-            {
-                fontFamily: "Arial",
-                fontSize: "16px",
-                color: "#888888"
-            }
-        ).setOrigin(0.5);
+        // =========================
+        // Sound Controls
+        // =========================
+
+        // Music toggle button
+        let musicOn = true;
+        const musicBtn = this.add.text(
+        this.scale.width / 2,
+        460,
+        "🎵 Music : ON",
+    {
+        fontFamily: "Arial",
+        fontSize: "22px",
+        color: "#ffffff",
+        backgroundColor: "#333366",
+        padding: { left: 20, right: 20, top: 10, bottom: 10 }
+    }
+        ).setOrigin(0.5).setInteractive();
+
+        musicBtn.on("pointerdown", () => {
+        musicOn = !musicOn;
+        musicBtn.setText("🎵 Music : " + (musicOn ? "ON" : "OFF"));
+        this.registry.set("musicOn", musicOn);
+});
+
+        // SFX toggle button
+        let sfxOn = true;
+        const sfxBtn = this.add.text(
+        this.scale.width / 2,
+        520,
+        "🔊 Sound : ON",
+    {
+        fontFamily: "Arial",
+        fontSize: "22px",
+        color: "#ffffff",
+        backgroundColor: "#333366",
+        padding: { left: 20, right: 20, top: 10, bottom: 10 }
+    }
+        ).setOrigin(0.5).setInteractive();
+
+        sfxBtn.on("pointerdown", () => {
+        sfxOn = !sfxOn;
+        sfxBtn.setText("🔊 Sound : " + (sfxOn ? "ON" : "OFF"));
+        this.registry.set("sfxOn", sfxOn);
+});
+
+        // Set defaults in registry
+        this.registry.set("musicOn", true);
+        this.registry.set("sfxOn", true);
 
     }
 

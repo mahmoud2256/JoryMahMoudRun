@@ -19,7 +19,7 @@ export default class GameScene extends Phaser.Scene {
         this.background.setPosition(width / 2, height / 2 - 75);
         this.background.setDepth(0);
      
-        if (this.cache.audio.exists("music")) {
+        if (this.cache.audio.exists("music") && this.registry.get("musicOn") !== false) {
             this.music = this.sound.add("music", { loop: true, volume: 0.4 });
             this.music.play();
         }
@@ -446,7 +446,7 @@ export default class GameScene extends Phaser.Scene {
     showGameOver() {
         this.gameOver = true;
         if (this.music) this.music.stop();
-        
+
         const width = this.scale.width;
         const height = this.scale.height;
 
