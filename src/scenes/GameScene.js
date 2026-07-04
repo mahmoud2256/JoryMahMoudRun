@@ -20,6 +20,16 @@ export default class GameScene extends Phaser.Scene {
         this.background.setDepth(0);
 
         // =========================
+        // الأرضية (شريط أسفل)
+        // =========================
+        this.groundY = height - 80;
+
+        this.groundStrip = this.add.tileSprite(
+            width / 2, this.groundY + 40, width, 80, "ground"
+        );
+        this.groundStrip.setDepth(1);
+
+        // =========================
         // إعدادات المنظور
         // horizonY = نقطة الأفق في الشاشة (حيث تختفي الحاجات في البعد)
         // nearHalfWidth = نص عرض المسارات قرب اللاعب
