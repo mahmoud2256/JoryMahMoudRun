@@ -25,20 +25,9 @@ export default class BootScene extends Phaser.Scene {
             console.warn("missing audio:", file.key);
         });
 
-        this.load.audio("jump", [
-            "assets/audio/jump.mp3",
-            "assets/audio/jump.wav"
-        ]);
-
-        this.load.audio("coinSound", [
-            "assets/audio/coin.mp3",
-            "assets/audio/coin.wav"
-        ]);
-
-        this.load.audio("gameOver", [
-            "assets/audio/gameOver.mp3",
-            "assets/audio/gameOver.wav"
-        ]);
+        this.load.audio("coinSound", "assets/audio/coin.wav");
+        this.load.audio("gameOver", "assets/audio/gameover.wav");
+        this.load.audio("jump", "assets/audio/jump.wav");
 
     }
 
