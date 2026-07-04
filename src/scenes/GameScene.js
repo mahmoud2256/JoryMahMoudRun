@@ -28,11 +28,7 @@ export default class GameScene extends Phaser.Scene {
         // =========================
         this.groundY = height - 80;
 
-        this.groundStrip = this.add.tileSprite(
-            width / 2, this.groundY + 40, width, 80, "ground"
-        );
-        this.groundStrip.setDepth(1);
-
+            
         // =========================
         // إعدادات المنظور
         // horizonY = نقطة الأفق في الشاشة (حيث تختفي الحاجات في البعد)
@@ -330,8 +326,7 @@ export default class GameScene extends Phaser.Scene {
         this.background.tilePositionY += this.zSpeed * 3 * dt;
 
         // الأرضية بتتحرك أسرع (إحساس الجري)
-        this.groundStrip.tilePositionY -= this.zSpeed * 10 * dt;
-
+        
         // انيميشن الجري
         if (!this.isJumping && !this.isDucking) {
             if (this.hasAnim && !this.player.anims.isPlaying) this.player.play("run");
