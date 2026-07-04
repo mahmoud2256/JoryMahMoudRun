@@ -14,7 +14,8 @@ export default class GameScene extends Phaser.Scene {
         // =========================
         // خلفية ثابتة تملأ الشاشة
         // =========================
-        this.background = this.add.tileSprite(width / 2, height / 2, width, height, "background");
+        this.background = this.add.image(width / 2, height / 2, "background");
+        this.background.setDisplaySize(width, height)
         this.background.setDepth(0);
      
         if (this.cache.audio.exists("music") && this.registry.get("musicOn") !== false) {
