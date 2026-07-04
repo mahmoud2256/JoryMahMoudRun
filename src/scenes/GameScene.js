@@ -18,6 +18,11 @@ export default class GameScene extends Phaser.Scene {
         this.background.setDisplaySize(width, height + 150);
         this.background.setPosition(width / 2, height / 2 - 75);
         this.background.setDepth(0);
+     
+        if (this.cache.audio.exists("music")) {
+            this.music = this.sound.add("music", { loop: true, volume: 0.4 });
+            this.music.play();
+        }
 
         // =========================
         // الأرضية (شريط أسفل)
@@ -440,6 +445,8 @@ export default class GameScene extends Phaser.Scene {
 
     showGameOver() {
         this.gameOver = true;
+        if (this.music) this.music.stop();
+        
         const width = this.scale.width;
         const height = this.scale.height;
 
