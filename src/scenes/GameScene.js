@@ -15,7 +15,8 @@ export default class GameScene extends Phaser.Scene {
         // خلفية ثابتة تملأ الشاشة
         // =========================
         this.background = this.add.image(width / 2, height / 2, "background");
-        this.background.setDisplaySize(width, height);
+        this.background.setDisplaySize(width, height + 150);
+        this.background.setPosition(width / 2, height / 2 - 75);
         this.background.setDepth(0);
 
         // =========================
