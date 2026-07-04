@@ -261,7 +261,7 @@ export default class GameScene extends Phaser.Scene {
         this.isJumping = true;
         if (this.hasAnim) this.player.stop();
         else this.player.setTexture("playerJump");
-        if (this.cache.audio.exists("jump")) this.sound.play("jump");
+        if (this.registry.get("sfxOn") !== false && this.cache.audio.exists("jump")) this.sound.play("jump");
         this.tweens.add({
             targets: this.player,
             y: this.baseY - this.standHeight * 1.55,
@@ -412,7 +412,7 @@ export default class GameScene extends Phaser.Scene {
         if (ent.type === "coin") {
             ent.sprite.destroy();
             this.entities.splice(index, 1);
-            if (this.cache.audio.exists("coinSound")) this.sound.play("coinSound");
+            if (this.registry.get("sfxOn") !== false && this.cache.audio.exists("coinSound")) this.sound.play("coinSound");
             this.score += 15;
             this.coinsCollected++;
             this.coinsText.setText("Coins : " + this.coinsCollected);
@@ -434,7 +434,7 @@ export default class GameScene extends Phaser.Scene {
             this.invincible = false;
         });
         if (this.lives <= 0) {
-            if (this.cache.audio.exists("gameOver")) this.sound.play("gameOver");
+            if (this.registry.get("sfxOn") !== false && this.cache.audio.exists("gameOver")) this.sound.play("gameOver");
             this.showGameOver();
         }
     }
