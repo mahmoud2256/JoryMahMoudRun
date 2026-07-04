@@ -14,9 +14,7 @@ export default class GameScene extends Phaser.Scene {
         // =========================
         // خلفية ثابتة تملأ الشاشة
         // =========================
-        this.background = this.add.image(width / 2, height / 2, "background");
-        this.background.setDisplaySize(width, height + 150);
-        this.background.setPosition(width / 2, height / 2 - 75);
+        this.background = this.add.tileSprite(width / 2, height / 2, width, height, "background");
         this.background.setDepth(0);
      
         if (this.cache.audio.exists("music") && this.registry.get("musicOn") !== false) {
@@ -327,7 +325,11 @@ export default class GameScene extends Phaser.Scene {
         this.zSpeed = Math.min(this.zMaxSpeed, this.zBaseSpeed + this.elapsedTime * this.zRampRate);
 
         // الأرضية بتتحرك (إحساس الجري)
-        this.groundStrip.tilePositionY -= this.zSpeed * 6 * dt;
+        // الخلفية بتتحرك لأسفل (إحساس الحركة للأمام)
+        this.background.tilePositionY += this.zSpeed * 3 * dt;
+
+        // الأرضية بتتحرك أسرع (إحساس الجري)
+        this.groundStrip.tilePositionY -= this.zSpeed * 10 * dt;
 
         // انيميشن الجري
         if (!this.isJumping && !this.isDucking) {
