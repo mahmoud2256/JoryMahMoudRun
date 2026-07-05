@@ -12,6 +12,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.image("playerRun", "assets/player/player.png");
         this.load.image("playerJump", "assets/player/player.png");
 
+        this.load.spritesheet("playerRunAnim", "assets/player/player_run_sheet.png", {
+            frameWidth: 160,
+            frameHeight: 320
+        });
+
         this.load.image("slime", "assets/enemy/slime.png");
 
         this.load.image("background", "assets/environment/background.png");
